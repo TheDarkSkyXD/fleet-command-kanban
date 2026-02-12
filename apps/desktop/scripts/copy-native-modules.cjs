@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 // afterPack hook for electron-builder
-// Copies native modules from app.asar.unpacked to daemon/node_modules
-// so the daemon process can find them when running with ELECTRON_RUN_AS_NODE
+// Copies native modules from app.asar.unpacked to daemon/_modules
+// These are rebuilt by electron-builder for Electron's Node.js ABI
 exports.default = async function(context) {
   const { appOutDir, packager } = context;
 
@@ -18,8 +18,8 @@ exports.default = async function(context) {
   }
 
   const unpackedModules = path.join(resourcesDir, 'app.asar.unpacked', 'node_modules');
-  const daemonModules = path.join(resourcesDir, 'daemon', 'node_modules');
-  const workspaceModules = path.join(__dirname, '..', '..', '..', 'node_modules');
+  // Note: _modules is used instead of node_modules to avoid electron-builder filtering
+  const daemonModules = path.join(resourcesDir, 'daemon', '_modules');
 
   // Check if unpacked modules exist
   if (!fs.existsSync(unpackedModules)) {
@@ -27,34 +27,22 @@ exports.default = async function(context) {
     return;
   }
 
-  // Create daemon/node_modules directory
-  fs.mkdirSync(daemonModules, { recursive: true });
-
   // Copy native modules (better-sqlite3, node-pty) from unpacked
+  // These are rebuilt by electron-builder for Electron's ABI
   const nativeModules = ['better-sqlite3', 'node-pty'];
   for (const moduleName of nativeModules) {
     const srcPath = path.join(unpackedModules, moduleName);
     const destPath = path.join(daemonModules, moduleName);
 
     if (fs.existsSync(srcPath)) {
-      console.log(`[afterPack] Copying ${moduleName} to daemon/node_modules`);
+      console.log(`[afterPack] Copying ${moduleName} to daemon/_modules (overwriting pnpm version)`);
+      // Remove existing (pnpm-installed) version
+      if (fs.existsSync(destPath)) {
+        fs.rmSync(destPath, { recursive: true });
+      }
       copyDirSync(srcPath, destPath);
     } else {
       console.log(`[afterPack] ${moduleName} not found in unpacked modules`);
-    }
-  }
-
-  // Copy JS-only dependencies from workspace
-  const jsDeps = ['bindings', 'file-uri-to-path'];
-  for (const moduleName of jsDeps) {
-    const srcPath = path.join(workspaceModules, moduleName);
-    const destPath = path.join(daemonModules, moduleName);
-
-    if (fs.existsSync(srcPath)) {
-      console.log(`[afterPack] Copying ${moduleName} from workspace`);
-      copyDirSync(srcPath, destPath);
-    } else {
-      console.log(`[afterPack] ${moduleName} not found in workspace`);
     }
   }
 

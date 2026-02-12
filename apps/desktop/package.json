@@ -7,13 +7,16 @@
   "scripts": {
     "dev": "electron-vite build && NODE_ENV=development electron .",
     "dev:watch": "electron-vite dev",
+    "prebuild": "node scripts/prepare-daemon.cjs",
     "build": "electron-vite build && electron-builder",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf out release"
+    "clean": "rm -rf out release build/daemon"
   },
   "dependencies": {
-    "@potato-cannon/daemon": "workspace:*"
+    "@potato-cannon/daemon": "workspace:*",
+    "better-sqlite3": "^12.6.2",
+    "node-pty": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.19.30",

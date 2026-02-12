@@ -24,6 +24,7 @@ package-lock.json
 # Electron outputs
 apps/desktop/out/
 apps/desktop/release/
+apps/desktop/build/daemon/
 
 # TypeScript build info
 *.tsbuildinfo

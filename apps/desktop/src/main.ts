@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import { spawn, ChildProcess } from 'child_process'
 import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@potato-cannon/shared'
 
@@ -24,20 +25,34 @@ async function startDaemon(): Promise<void> {
 
   // In dev: __dirname is apps/desktop/out/main/, go up 4 levels to repo root
   // In prod: daemon is bundled in resources
-  const daemonPath = isDev
-    ? path.join(__dirname, '..', '..', '..', '..', 'apps', 'daemon', 'bin', 'potato-cannon.js')
-    : path.join(process.resourcesPath, 'daemon', 'bin', 'potato-cannon.js')
+  const daemonDir = isDev
+    ? path.join(__dirname, '..', '..', '..', '..', 'apps', 'daemon')
+    : path.join(process.resourcesPath, 'daemon')
+  const daemonPath = path.join(daemonDir, 'bin', 'potato-cannon.js')
 
   const nodeEnv = isDev ? 'development' : 'production'
 
+  // In production, _modules needs to be symlinked to node_modules for ESM resolution
+  // (electron-builder filters out node_modules from extraResources, so we rename it during build)
+  if (!isDev) {
+    const modulesPath = path.join(daemonDir, '_modules')
+    const nodeModulesPath = path.join(daemonDir, 'node_modules')
+    if (fs.existsSync(modulesPath) && !fs.existsSync(nodeModulesPath)) {
+      try {
+        fs.symlinkSync(modulesPath, nodeModulesPath, 'junction')
+        console.log('[electron] Created node_modules symlink for ESM resolution')
+      } catch (err) {
+        console.error('[electron] Failed to create node_modules symlink:', err)
+      }
+    }
+  }
+
   // In production, use Electron's Node.js to ensure native module compatibility
   // ELECTRON_RUN_AS_NODE makes Electron act as a regular Node.js process
-  // NODE_PATH ensures native modules are loaded from the packaged app, not workspace
   const nodePath = isDev ? process.execPath : process.execPath
-  const nativeModulesPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules')
   const env = isDev
     ? { ...process.env, NODE_ENV: nodeEnv }
-    : { ...process.env, NODE_ENV: nodeEnv, ELECTRON_RUN_AS_NODE: '1', NODE_PATH: nativeModulesPath }
+    : { ...process.env, NODE_ENV: nodeEnv, ELECTRON_RUN_AS_NODE: '1' }
 
   console.log(`[electron] Starting daemon: ${nodePath} ${daemonPath} start`)
 
