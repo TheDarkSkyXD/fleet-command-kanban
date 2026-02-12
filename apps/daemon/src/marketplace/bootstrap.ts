@@ -18,18 +18,22 @@ interface CommandResult {
   stderr: string;
 }
 
-function checkClaudeCli(): boolean {
+function getClaudePath(): string | null {
   try {
-    execSync('which claude', { stdio: 'pipe' });
-    return true;
+    return execSync('which claude', { encoding: 'utf-8', stdio: 'pipe' }).trim();
   } catch {
-    return false;
+    // Fallback to common installation path
+    const fallback = path.join(os.homedir(), '.local', 'bin', 'claude');
+    if (existsSync(fallback)) {
+      return fallback;
+    }
+    return null;
   }
 }
 
-function runClaudeCommand(args: string[]): Promise<CommandResult> {
+function runClaudeCommand(claudePath: string, args: string[]): Promise<CommandResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn('claude', args, { stdio: 'pipe' });
+    const child = spawn(claudePath, args, { stdio: 'pipe' });
 
     let stdout = '';
     let stderr = '';
@@ -80,20 +84,12 @@ async function copyDirectoryRecursive(src: string, dest: string): Promise<void> 
 export async function bootstrapMarketplace(): Promise<void> {
   console.log('[marketplace] Bootstrapping marketplace...');
 
-  const hasClaudeCli = checkClaudeCli();
-  if (!hasClaudeCli) {
-    console.log('[marketplace] Claude CLI not found, skipping marketplace bootstrap');
-    console.log('[marketplace] Install Claude CLI and restart daemon to enable marketplace');
-    return;
-  }
-
-  // Step 1: Delete old marketplace directory
+  // Step 1: Always copy marketplace to ~/.potato-cannon/marketplace (doesn't require Claude CLI)
   if (existsSync(MARKETPLACE_DIR)) {
     console.log('[marketplace] Removing old marketplace directory...');
     rmSync(MARKETPLACE_DIR, { recursive: true, force: true });
   }
 
-  // Step 2: Copy templates/marketplace/ to ~/.potato-cannon/marketplace
   // Path to bundled marketplace (relative to compiled dist/marketplace/)
   const bundledMarketplace = path.join(__dirname, '..', '..', 'templates', 'marketplace');
 
@@ -106,12 +102,20 @@ export async function bootstrapMarketplace(): Promise<void> {
   await copyDirectoryRecursive(bundledMarketplace, MARKETPLACE_DIR);
   console.log(`[marketplace] Marketplace copied to ${MARKETPLACE_DIR}`);
 
-  // Step 3: Uninstall old marketplace (plugin first, then marketplace)
+  // Step 2: Install plugin to Claude CLI (requires Claude CLI)
+  const claudePath = getClaudePath();
+  if (!claudePath) {
+    console.log('[marketplace] Claude CLI not found, skipping plugin installation');
+    console.log('[marketplace] Install Claude CLI and restart daemon to enable skills');
+    return;
+  }
+
+  // Uninstall old marketplace (plugin first, then marketplace)
   const pluginId = `${PLUGIN_NAME}@${MARKETPLACE_NAME}`;
 
   try {
     console.log('[marketplace] Uninstalling old plugin...');
-    await runClaudeCommand(['plugin', 'uninstall', pluginId]);
+    await runClaudeCommand(claudePath, ['plugin', 'uninstall', pluginId]);
     console.log('[marketplace] Old plugin uninstalled');
   } catch {
     // Plugin may not have been installed
@@ -119,7 +123,7 @@ export async function bootstrapMarketplace(): Promise<void> {
 
   try {
     console.log('[marketplace] Removing old marketplace...');
-    await runClaudeCommand(['plugin', 'marketplace', 'remove', MARKETPLACE_NAME]);
+    await runClaudeCommand(claudePath, ['plugin', 'marketplace', 'remove', MARKETPLACE_NAME]);
     console.log('[marketplace] Old marketplace removed');
   } catch {
     // Marketplace may not have been installed
@@ -131,10 +135,10 @@ export async function bootstrapMarketplace(): Promise<void> {
     rmSync(CLAUDE_CACHE_DIR, { recursive: true, force: true });
   }
 
-  // Step 4: Install marketplace from local path and install plugin
+  // Install marketplace from local path and install plugin
   try {
     console.log('[marketplace] Installing marketplace from local path...');
-    await runClaudeCommand(['plugin', 'marketplace', 'add', MARKETPLACE_DIR]);
+    await runClaudeCommand(claudePath, ['plugin', 'marketplace', 'add', MARKETPLACE_DIR]);
     console.log('[marketplace] Marketplace installed');
   } catch (err) {
     const errorMsg = (err as Error).message;
@@ -148,7 +152,7 @@ export async function bootstrapMarketplace(): Promise<void> {
 
   try {
     console.log('[marketplace] Installing potato plugin...');
-    await runClaudeCommand(['plugin', 'install', pluginId]);
+    await runClaudeCommand(claudePath, ['plugin', 'install', pluginId]);
     console.log('[marketplace] Plugin installed');
   } catch (err) {
     const errorMsg = (err as Error).message;
