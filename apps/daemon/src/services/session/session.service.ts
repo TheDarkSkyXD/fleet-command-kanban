@@ -623,10 +623,24 @@ export class SessionService {
 
     const mcpProxyPath = path.join(__dirname, "..", "..", "mcp", "proxy.js");
 
+    // Get full path to node (required when running under Electron where PATH may not include node)
+    let nodePath: string;
+    try {
+      nodePath = execSync("which node", { encoding: "utf-8" }).trim();
+    } catch {
+      // Fallback to common locations
+      const fallbacks = [
+        path.join(process.env.HOME || "", ".nvm", "versions", "node", "v22.14.0", "bin", "node"),
+        path.join(process.env.HOME || "", ".local", "bin", "node"),
+        "/usr/local/bin/node",
+      ];
+      nodePath = fallbacks.find((p) => existsSync(p)) || "node";
+    }
+
     const mcpConfig = {
       mcpServers: {
         "potato-cannon": {
-          command: "node",
+          command: nodePath,
           args: [mcpProxyPath],
           env: {
             POTATO_PROJECT_ID: projectId,
