@@ -25,6 +25,11 @@ export const chatTools: ToolDefinition[] = [
           type: 'string',
           description: 'Optional current phase (e.g., Refinement, Architecture) for context',
         },
+        suspend: {
+          type: 'boolean',
+          description:
+            'If true, the session will suspend after asking. The agent should exit cleanly after receiving the response. When the user answers, a new session will resume with the response.',
+        },
       },
       required: ['question'],
     },
@@ -77,7 +82,7 @@ export const chatHandlers: Record<
   (ctx: McpContext, args: Record<string, unknown>) => Promise<McpToolResult>
 > = {
   chat_ask: async (ctx, args) => {
-    // Brainstorms use async flow - session exits after asking
+    // Brainstorms always use async flow - session exits after asking
     if (ctx.brainstormId) {
       await chatService.askAsync(
         toContext(ctx),
@@ -90,7 +95,25 @@ export const chatHandlers: Record<
       };
     }
 
-    // Tickets use existing synchronous flow
+    // Tickets with suspend: true use async flow (same as brainstorm)
+    if (args.suspend === true) {
+      await chatService.askAsync(
+        toContext(ctx),
+        args.question as string,
+        args.options as string[] | undefined,
+        args.phase as string | undefined
+      );
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'Question sent. Session will suspend — exit cleanly now. You will be resumed with the answer.',
+          },
+        ],
+      };
+    }
+
+    // Default: tickets use synchronous blocking flow
     const answer = await chatService.ask(
       toContext(ctx),
       args.question as string,
