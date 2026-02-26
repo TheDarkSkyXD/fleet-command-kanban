@@ -851,94 +851,6 @@ button, a, [role="button"] {
 }
 
 /* ================================================
-   BRAINSTORM MASTER-DETAIL LAYOUT
-   Container query responsive pattern
-   ================================================ */
-
-.brainstorm-container {
-  container-type: inline-size;
-  container-name: brainstorm;
-  height: 100%;
-}
-
-.brainstorm-layout {
-  display: flex;
-  height: 100%;
-  padding: 16px;
-  gap: 16px;
-}
-
-.brainstorm-master {
-  width: 320px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.brainstorm-detail {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-/* Hide back button on desktop when both panels are visible */
-.brainstorm-back-button {
-  display: none;
-}
-
-/* Mobile layout - container query at 768px */
-@container brainstorm (max-width: 768px) {
-  .brainstorm-layout {
-    position: relative;
-    padding: 12px;
-    gap: 0;
-  }
-
-  .brainstorm-master {
-    position: absolute;
-    inset: 12px;
-    width: calc(100% - 24px);
-    z-index: 10;
-    transition: transform 300ms ease-out, visibility 0s 0s;
-  }
-
-  .brainstorm-master[data-hidden="true"] {
-    transform: translateX(calc(-100% - 24px));
-    visibility: hidden;
-    transition: transform 300ms ease-out, visibility 0s 300ms;
-  }
-
-  .brainstorm-detail {
-    position: absolute;
-    inset: 12px;
-    transform: translateX(calc(100% + 24px));
-    visibility: hidden;
-    z-index: 20;
-    background: var(--color-bg-secondary);
-    transition: transform 300ms ease-out, visibility 0s 300ms;
-  }
-
-  .brainstorm-detail[data-active="true"] {
-    transform: translateX(0);
-    visibility: visible;
-    transition: transform 300ms ease-out, visibility 0s 0s;
-  }
-
-  /* Show back button on mobile/tablet when detail is the only visible panel */
-  .brainstorm-back-button {
-    display: inline-flex;
-  }
-}
-
-/* ================================================
    BOARD + TASK DETAIL LAYOUT
    Container query responsive pattern
    ================================================ */
@@ -969,7 +881,8 @@ button, a, [role="button"] {
 /* Mobile layout - media query fallback */
 @media (max-width: 640px) {
   /* Hide board content when ticket detail is open */
-  .board-container[data-detail-open="true"] > main {
+  .board-container[data-detail-open="true"] > main,
+  .board-container[data-brainstorm-open="true"] > main {
     visibility: hidden;
   }
 
@@ -991,6 +904,51 @@ button, a, [role="button"] {
   }
 
   .ticket-detail-panel[data-open="true"] {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 300ms ease-out, visibility 0s 0s;
+  }
+}
+
+/* Brainstorm detail panel - wider than ticket panel */
+.brainstorm-detail-panel {
+  height: 100%;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-sidebar);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 200ms ease-in-out;
+}
+
+.brainstorm-detail-panel[data-open="true"] {
+  width: 600px;
+  max-width: 40vw;
+}
+
+.brainstorm-detail-panel[data-open="false"] {
+  width: 0;
+}
+
+@media (max-width: 640px) {
+  .brainstorm-detail-panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    width: auto !important;
+    max-width: none !important;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    z-index: 30;
+    transform: translateX(calc(100% + 24px));
+    visibility: hidden;
+    transition: transform 300ms ease-out, visibility 0s 300ms;
+  }
+
+  .brainstorm-detail-panel[data-open="true"] {
     transform: translateX(0);
     visibility: visible;
     transition: transform 300ms ease-out, visibility 0s 0s;
