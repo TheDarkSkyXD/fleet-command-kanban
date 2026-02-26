@@ -1,20 +1,23 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Plus, FolderPlus } from "lucide-react";
 import {
   DndContext,
+  DragEndEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { useProjects, useFolders } from "@/hooks/queries";
+import { useProjects, useFolders, useUpdateProject } from "@/hooks/queries";
 import { useAppStore } from "@/stores/appStore";
 import { IconButton } from "@/components/ui/icon-button";
 import { ProjectMenuItem } from "@/components/layout/ProjectMenuItem";
 import { SidebarFolderGroup } from "@/components/layout/SidebarFolderGroup";
+import { UngroupedDropZone } from "@/components/layout/UngroupedDropZone";
 import { usePendingQuestions } from "@/hooks/usePendingQuestions";
+import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
@@ -136,6 +139,7 @@ export function AppSidebar() {
   const collapsedFolders = useAppStore((s) => s.collapsedFolders);
   const expandFolder = useAppStore((s) => s.expandFolder);
   const { hasPendingQuestions } = usePendingQuestions();
+  const updateProject = useUpdateProject();
 
   const [draggedProject, setDraggedProject] = useState<string | null>(null);
 
@@ -190,16 +194,43 @@ export function AppSidebar() {
   // Sort folders alphabetically
   const sortedFolders = (folders || []).sort((a, b) => a.name.localeCompare(b.name));
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     const projectId = event.active.data?.current?.projectId;
     if (projectId) {
       setDraggedProject(projectId);
     }
-  };
+  }, []);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     setDraggedProject(null);
-  };
+
+    const { active, over } = event;
+    if (!over || !projects) return;
+
+    const projectId = active.id as string;
+    const draggedProj = projects.find((p) => p.id === projectId);
+    if (!draggedProj) return;
+
+    // Extract target folder ID from the drop zone
+    const targetFolderId = over.data?.current?.folderId || null;
+
+    // Don't update if dropping in the same folder
+    if (draggedProj.folderId === targetFolderId) return;
+
+    // Call the API to move the project
+    updateProject.mutate(
+      {
+        id: projectId,
+        updates: { folderId: targetFolderId },
+      },
+      {
+        onError: (error) => {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to move project';
+          toast.error(errorMessage);
+        },
+      }
+    );
+  }, [projects, updateProject]);
 
   return (
     <DndContext
@@ -309,15 +340,19 @@ export function AppSidebar() {
                     ))}
 
                     {/* Render ungrouped projects */}
-                    {ungroupedProjects.map((project) => (
-                      <ProjectMenuItem
-                        key={project.id}
-                        project={project}
-                        isActive={project.slug === currentProjectSlug}
-                        hasActiveSessions={hasActiveSessions(project.id)}
-                        hasPendingQuestions={hasPendingQuestions(project.id)}
-                      />
-                    ))}
+                    <UngroupedDropZone>
+                      <SidebarMenu>
+                        {ungroupedProjects.map((project) => (
+                          <ProjectMenuItem
+                            key={project.id}
+                            project={project}
+                            isActive={project.slug === currentProjectSlug}
+                            hasActiveSessions={hasActiveSessions(project.id)}
+                            hasPendingQuestions={hasPendingQuestions(project.id)}
+                          />
+                        ))}
+                      </SidebarMenu>
+                    </UngroupedDropZone>
                   </>
                 )}
               </SidebarMenu>
