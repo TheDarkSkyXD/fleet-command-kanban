@@ -417,6 +417,8 @@ export class SessionService {
 
     this.eventEmitter.emit("session:started", { sessionId, ...meta });
 
+    let claudeSessionIdCaptured = false;
+
     proc.onData((data: string) => {
       const lines = data.split("\n").filter(Boolean);
       for (const line of lines) {
@@ -429,6 +431,17 @@ export class SessionService {
             ...meta,
             event: logEntry,
           });
+
+          // Capture Claude's session ID from init event (for --resume support)
+          if (
+            !claudeSessionIdCaptured &&
+            event.type === "system" &&
+            event.subtype === "init" &&
+            event.session_id
+          ) {
+            claudeSessionIdCaptured = true;
+            updateClaudeSessionId(sessionId, event.session_id);
+          }
         } catch {
           const logEntry = {
             type: "raw",
@@ -477,6 +490,10 @@ export class SessionService {
       }
 
       this.sessions.delete(sessionId);
+
+      // End stored session in database (for ticket sessions tracked in SQLite)
+      endStoredSession(sessionId, exitCode);
+
       this.eventEmitter.emit("session:ended", { sessionId, ...endMeta });
 
       // Handle agent completion via new executor
@@ -814,7 +831,15 @@ export class SessionService {
     // Terminate any existing session first (uses sessions table as lock)
     await this.terminateExistingSession('ticket', ticketId);
 
-    const sessionId = this.generateSessionId();
+    // Create stored session record in database for tracking
+    const storedSession = createStoredSession({
+      projectId,
+      ticketId,
+      agentSource: agentWorker.source,
+      phase,
+    });
+    // Use the stored session ID instead of the generated one
+    const sessionId = storedSession.id;
 
     const ticket = await getTicket(projectId, ticketId);
     const images = await listTicketImages(projectId, ticketId);
