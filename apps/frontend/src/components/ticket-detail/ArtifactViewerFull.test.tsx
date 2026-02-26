@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { ArtifactViewerFull } from './ArtifactViewerFull'
 
 // Mock the API client
@@ -37,6 +38,14 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
+// Mock ResizeObserver (needed for scroll-area component)
+class ResizeObserverMock {
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+}
+global.ResizeObserver = ResizeObserverMock as any
+
 import { api } from '@/api/client'
 
 const mockArtifact = {
@@ -49,9 +58,20 @@ const mockArtifact = {
 
 const mockContent = '# Test Heading\n\nSome **bold** content.'
 
+// Setup clipboard mock at top level
+const clipboardWriteTextMock = vi.fn().mockResolvedValue(undefined)
+Object.defineProperty(navigator, 'clipboard', {
+  value: {
+    writeText: clipboardWriteTextMock,
+  },
+  writable: true,
+  configurable: true,
+})
+
 describe('ArtifactViewerFull - Copy Button', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(api.getTicketArtifact).mockResolvedValue(mockContent)
   })
 
   afterEach(() => {
@@ -125,5 +145,27 @@ describe('ArtifactViewerFull - Copy Button', () => {
     )
 
     expect(container.innerHTML).toBe('')
+  })
+
+  it('calls navigator.clipboard.writeText with raw markdown on click', async () => {
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    // Wait for the copy button to appear (indicates content is loaded)
+    const copyButton = await screen.findByLabelText('Copy to clipboard')
+
+    // Click the button using the native DOM click to ensure it works
+    copyButton.click()
+
+    // Verify clipboard.writeText was called with the raw markdown
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith(mockContent)
+    })
   })
 })
