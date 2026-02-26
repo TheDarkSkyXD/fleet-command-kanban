@@ -55,6 +55,15 @@ interface AppState {
   openAddTicketModal: () => void
   closeAddTicketModal: () => void
 
+  createFolderModalOpen: boolean
+  openCreateFolderModal: () => void
+  closeCreateFolderModal: () => void
+
+  // Folder collapse state (persisted)
+  collapsedFolders: string[]
+  toggleFolderCollapsed: (folderId: string) => void
+  expandFolder: (folderId: string) => void
+
   // Archived tickets visibility
   showArchivedTickets: boolean
   setShowArchivedTickets: (show: boolean) => void
@@ -134,6 +143,24 @@ export const useAppStore = create<AppState>()(
       openAddTicketModal: () => set({ addTicketModalOpen: true }),
       closeAddTicketModal: () => set({ addTicketModalOpen: false }),
 
+      // Create folder modal
+      createFolderModalOpen: false,
+      openCreateFolderModal: () => set({ createFolderModalOpen: true }),
+      closeCreateFolderModal: () => set({ createFolderModalOpen: false }),
+
+      // Folder collapse state
+      collapsedFolders: [],
+      toggleFolderCollapsed: (folderId) =>
+        set((state) => ({
+          collapsedFolders: state.collapsedFolders.includes(folderId)
+            ? state.collapsedFolders.filter((id) => id !== folderId)
+            : [...state.collapsedFolders, folderId]
+        })),
+      expandFolder: (folderId) =>
+        set((state) => ({
+          collapsedFolders: state.collapsedFolders.filter((id) => id !== folderId)
+        })),
+
       // Archived tickets visibility
       showArchivedTickets: false,
       setShowArchivedTickets: (show) => set({ showArchivedTickets: show })
@@ -143,7 +170,8 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
         boardViewMode: state.boardViewMode,
-        showArchivedTickets: state.showArchivedTickets
+        showArchivedTickets: state.showArchivedTickets,
+        collapsedFolders: state.collapsedFolders
       })
     }
   )
