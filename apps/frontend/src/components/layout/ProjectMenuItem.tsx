@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import { getProjectIcon } from '@/components/configure/ProjectIconPicker'
 import { cn } from '@/lib/utils'
 import {
@@ -23,8 +25,24 @@ export function ProjectMenuItem({
   const Icon = getProjectIcon(project.icon || 'package')
   const colorStyle = project.color ? { color: project.color } : undefined
 
+  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+    id: project.id,
+    data: { projectId: project.id, folderId: project.folderId },
+  })
+
   return (
-    <SidebarMenuItem className={cn(hasActiveSessions && 'thinking-shimmer')}>
+    <SidebarMenuItem
+      ref={setNodeRef}
+      className={cn(
+        hasActiveSessions && 'thinking-shimmer',
+        isDragging && 'opacity-50'
+      )}
+      style={{
+        transform: CSS.Translate.toString(transform),
+      }}
+      {...listeners}
+      {...attributes}
+    >
       <SidebarMenuButton
         asChild
         isActive={isActive}
