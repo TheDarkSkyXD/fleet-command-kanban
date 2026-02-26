@@ -21,6 +21,7 @@ import {
 import { TemplateUpgradeBanner } from '@/components/TemplateUpgradeBanner'
 import { ArchivedSwimlane } from './ArchivedSwimlane'
 import { BoardColumn } from './BoardColumn'
+import { BrainstormColumn } from './BrainstormColumn'
 import { TicketCard } from './TicketCard'
 import { ViewToggle } from './ViewToggle'
 import { TableView } from './TableView'
@@ -288,12 +289,23 @@ export function Board({ projectId }: BoardProps) {
 
       {/* Board Content - Conditional Rendering */}
       {boardViewMode === 'table' ? (
-        <TableView projectId={projectId} />
+        <div className="h-full flex">
+          {/* Desktop only: fixed brainstorm column */}
+          <div className="hidden sm:block shrink-0 h-full overflow-y-auto border-r border-border p-4 pr-2">
+            <BrainstormColumn projectId={projectId} />
+          </div>
+          <TableView projectId={projectId} />
+        </div>
       ) : (
         <div className="flex-1 min-h-0 h-full">
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="h-full overflow-x-auto overflow-y-hidden p-4">
               <div className="flex gap-4 h-full">
+                {/* Brainstorm column: scrolls on mobile, sticky on desktop */}
+                <div className="shrink-0 sm:sticky sm:left-4 sm:z-10 sm:bg-bg-primary">
+                  <BrainstormColumn projectId={projectId} />
+                </div>
+
                 {phases?.map((phase) => {
                   const phaseConfig = templateConfig?.phases.find((p) => p.name === phase)
                   const isManual = isManualCheckpoint(phaseConfig, phase, phases)
