@@ -197,6 +197,7 @@ export function registerProjectRoutes(
         disabledPhases: p.disabledPhases,
         disabledPhaseMigration: p.disabledPhaseMigration,
         swimlaneColors: p.swimlaneColors,
+        folderId: p.folderId,
       }));
       res.json(list);
     } catch (error) {
@@ -292,6 +293,7 @@ export function registerProjectRoutes(
         icon?: string;
         color?: string;
         swimlaneColors?: Record<string, string>;
+        folderId?: string | null;
       };
 
       const project = getProjectById(id);
