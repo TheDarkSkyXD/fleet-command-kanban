@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-const CURRENT_SCHEMA_VERSION = 6;
+const CURRENT_SCHEMA_VERSION = 7;
 
 /**
  * Run database migrations.
@@ -31,6 +31,10 @@ export function runMigrations(db: Database.Database): void {
 
   if (version < 6) {
     migrateV6(db);
+  }
+
+  if (version < 7) {
+    migrateV7(db);
   }
 
   db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
@@ -375,4 +379,20 @@ function migrateV5(db: Database.Database): void {
  */
 function migrateV6(db: Database.Database): void {
   db.exec(`ALTER TABLE projects ADD COLUMN branch_prefix TEXT DEFAULT 'potato'`);
+}
+
+/**
+ * V7: Add folders table and folder_id FK on projects
+ */
+function migrateV7(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS folders (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    ALTER TABLE projects ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL;
+  `);
 }
