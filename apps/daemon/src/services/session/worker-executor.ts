@@ -42,6 +42,7 @@ import {
 } from "./loops/task-loop.js";
 import { getPhaseConfig, getNextEnabledPhase } from "./phase-config.js";
 import { updateTicket } from "../../stores/ticket.store.js";
+import { readQuestion } from "../../stores/chat.store.js";
 import { updateTaskStatus } from "../../stores/task.store.js";
 import { logToDaemon } from "./ticket-logger.js";
 import {
@@ -442,6 +443,27 @@ export async function handleAgentCompletion(
 
   const state = await getWorkerState(projectId, ticketId);
   if (!state) return;
+
+  // Check if this exit is a suspension (pending question exists, no response yet)
+  // A suspended session exits cleanly (code 0) after calling chat_ask with suspend: true.
+  // We must NOT advance the worker tree — the session will resume when the user responds.
+  if (exitCode === 0 && ticketId) {
+    const pendingQuestion = await readQuestion(projectId, ticketId);
+    if (pendingQuestion) {
+      await logToDaemon(projectId, ticketId, `Session suspended — awaiting user response`, {
+        agentId,
+        questionConversationId: pendingQuestion.conversationId,
+      });
+      // Emit event so frontend knows ticket is waiting
+      const { getTicket } = await import("../../stores/ticket.store.js");
+      const ticket = getTicket(projectId, ticketId);
+      if (ticket) {
+        const { eventBus } = await import("../../utils/event-bus.js");
+        eventBus.emit("ticket:updated", { projectId, ticket });
+      }
+      return; // Critical: return without advancing worker state
+    }
+  }
 
   await logToDaemon(projectId, ticketId, `Agent ${agentId} completed`, {
     exitCode,
