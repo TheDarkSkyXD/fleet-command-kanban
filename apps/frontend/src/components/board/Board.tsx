@@ -302,7 +302,7 @@ export function Board({ projectId }: BoardProps) {
             <div className="h-full overflow-x-auto overflow-y-hidden p-4">
               <div className="flex gap-4 h-full">
                 {/* Brainstorm column: scrolls on mobile, sticky on desktop */}
-                <div className="shrink-0 sm:sticky sm:left-4 sm:z-10 sm:bg-bg-primary">
+                <div className="shrink-0 sm:sticky sm:left-4 sm:z-10 sm:bg-bg-primary sm:pr-4">
                   <BrainstormColumn projectId={projectId} />
                 </div>
 

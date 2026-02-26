@@ -19,7 +19,8 @@ export function BrainstormNewForm({ onSubmit, isSubmitting }: BrainstormNewFormP
   const handleSubmit = async () => {
     if (!input.trim() || isSubmitting) return
     await onSubmit(input.trim())
-    setInput('')
+    // Don't clear input here — on success the component unmounts (parent transitions to chat),
+    // on failure we preserve the user's input so they can retry
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {

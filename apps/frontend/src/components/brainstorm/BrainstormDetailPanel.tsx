@@ -20,6 +20,9 @@ export function BrainstormDetailPanel() {
 
   const queryClient = useQueryClient()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+  // Track the initial message so BrainstormChat can show a thinking indicator immediately
+  const [pendingInitialMessage, setPendingInitialMessage] = useState<string | null>(null)
 
   // Only show panel on board view and when viewing the same project
   const location = useLocation()
@@ -59,9 +62,13 @@ export function BrainstormDetailPanel() {
   const handleCreateBrainstorm = useCallback(async (message: string) => {
     if (!brainstormSheetProjectId) return
     setIsSubmitting(true)
+    setCreateError(null)
     try {
       const response = await api.createBrainstorm(brainstormSheetProjectId, { initialMessage: message })
       const { id, name } = response.brainstorm
+
+      // Track the initial message so chat can show thinking indicator immediately
+      setPendingInitialMessage(message)
 
       // Invalidate the brainstorms list so it shows the new one
       queryClient.invalidateQueries({ queryKey: ['brainstorms', brainstormSheetProjectId] })
@@ -70,6 +77,7 @@ export function BrainstormDetailPanel() {
       openBrainstormSheet(brainstormSheetProjectId, id, name)
     } catch (error) {
       console.error('Failed to create brainstorm:', error)
+      setCreateError(error instanceof Error ? error.message : 'Failed to create brainstorm')
     } finally {
       setIsSubmitting(false)
     }
@@ -113,15 +121,23 @@ export function BrainstormDetailPanel() {
         {/* Content */}
         <div className="flex-1 flex flex-col min-h-0 mt-4">
           {brainstormSheetIsCreating ? (
-            <BrainstormNewForm
-              onSubmit={handleCreateBrainstorm}
-              isSubmitting={isSubmitting}
-            />
+            <>
+              <BrainstormNewForm
+                onSubmit={handleCreateBrainstorm}
+                isSubmitting={isSubmitting}
+              />
+              {createError && (
+                <div className="px-6 pb-4 text-sm text-destructive">
+                  {createError}
+                </div>
+              )}
+            </>
           ) : brainstormSheetBrainstormId && brainstormSheetProjectId ? (
             <BrainstormChat
               projectId={brainstormSheetProjectId}
               brainstormId={brainstormSheetBrainstormId}
               brainstormName={brainstormSheetBrainstormName || 'Brainstorm'}
+              initialMessage={pendingInitialMessage ?? undefined}
               onDelete={handleDelete}
             />
           ) : null}
