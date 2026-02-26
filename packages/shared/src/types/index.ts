@@ -1,4 +1,5 @@
 export * from './project.types.js'
+export * from './folder.types.js'
 export * from './ticket.types.js'
 export * from './session.types.js'
 export * from './brainstorm.types.js'

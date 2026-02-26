@@ -38,6 +38,7 @@ export interface Project {
   disabledPhaseMigration?: boolean;    // true while migration is in progress
   swimlaneColors?: Record<string, string>;  // phase name -> hex color
   branchPrefix?: string;  // Custom branch prefix (default: 'potato')
+  folderId?: string | null;  // FK to folders table
 }
 
 export interface DaemonInfo {
