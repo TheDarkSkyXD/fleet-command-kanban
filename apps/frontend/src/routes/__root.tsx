@@ -7,6 +7,7 @@ import { EmptyProjects } from '@/components/layout/EmptyProjects'
 import { TicketDetailPanel } from '@/components/ticket-detail'
 import { AddTicketModal } from '@/components/board/AddTicketModal'
 import { AddProjectModal } from '@/components/layout/AddProjectModal'
+import { CreateFolderModal } from '@/components/layout/CreateFolderModal'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { useProjects } from '@/hooks/queries'
 import { useAppStore } from '@/stores/appStore'
@@ -139,6 +140,7 @@ function RootLayout() {
       </SidebarInset>
       <AddTicketModal />
       <AddProjectModal />
+      <CreateFolderModal />
     </SidebarProvider>
     </>
   )
