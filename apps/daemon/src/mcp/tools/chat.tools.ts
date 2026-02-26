@@ -77,22 +77,37 @@ export const chatHandlers: Record<
   (ctx: McpContext, args: Record<string, unknown>) => Promise<McpToolResult>
 > = {
   chat_ask: async (ctx, args) => {
-    // All contexts use async flow — session suspends after asking.
-    // The worker executor detects the pending question on exit and preserves state.
-    // When the user responds, a new session resumes with --resume.
-    await chatService.askAsync(
-      toContext(ctx),
+    const context = toContext(ctx);
+
+    if (context.brainstormId) {
+      // Brainstorm: async flow — session exits, respawns when user answers.
+      await chatService.askAsync(
+        context,
+        args.question as string,
+        args.options as string[] | undefined,
+        args.phase as string | undefined
+      );
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'Question sent. Session will suspend — exit cleanly now. You will be resumed with the answer.',
+          },
+        ],
+      };
+    }
+
+    // Ticket: blocking flow — session stays alive while waiting for response.
+    // This allows multi-question agents (e.g. refinement in ralph loops) to
+    // ask several questions in one session without triggering worker advancement.
+    const answer = await chatService.ask(
+      context,
       args.question as string,
       args.options as string[] | undefined,
       args.phase as string | undefined
     );
     return {
-      content: [
-        {
-          type: 'text',
-          text: 'Question sent. Session will suspend — exit cleanly now. You will be resumed with the answer.',
-        },
-      ],
+      content: [{ type: 'text', text: answer }],
     };
   },
 
