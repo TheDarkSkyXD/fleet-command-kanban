@@ -379,16 +379,15 @@ export class ChatService {
       answer,
     });
 
-    // For brainstorms using askAsync, save user message to conversation store
-    // (Tickets using ask() save the message when waitForResponse returns)
-    if (context.brainstormId) {
-      const conversationId = this.getConversationId(context);
-      if (conversationId) {
-        // Mark pending question as answered
-        const pendingQuestion = getPendingQuestion(conversationId);
-        if (pendingQuestion) {
-          answerQuestion(pendingQuestion.id);
-        }
+    // For async contexts (brainstorms and suspended tickets using askAsync),
+    // save user message to conversation store here.
+    // Tickets using blocking ask() save the message when waitForResponse returns.
+    const conversationId = this.getConversationId(context);
+    if (conversationId) {
+      // Mark pending question as answered
+      const pendingQuestion = getPendingQuestion(conversationId);
+      if (pendingQuestion) {
+        answerQuestion(pendingQuestion.id);
 
         // Save user's response
         addMessage(conversationId, {
@@ -396,12 +395,21 @@ export class ChatService {
           text: answer,
         });
 
-        // Emit SSE event for frontend
-        eventBus.emit("brainstorm:message", {
-          projectId: context.projectId,
-          brainstormId: context.brainstormId,
-          message: { type: "user", text: answer, timestamp: new Date().toISOString() },
-        });
+        // Emit SSE events for cross-client updates
+        if (context.brainstormId) {
+          eventBus.emit("brainstorm:message", {
+            projectId: context.projectId,
+            brainstormId: context.brainstormId,
+            message: { type: "user", text: answer, timestamp: new Date().toISOString() },
+          });
+        }
+        if (context.ticketId) {
+          eventBus.emit("ticket:message", {
+            projectId: context.projectId,
+            ticketId: context.ticketId,
+            message: { type: "user", text: answer, timestamp: new Date().toISOString() },
+          });
+        }
       }
     }
 
