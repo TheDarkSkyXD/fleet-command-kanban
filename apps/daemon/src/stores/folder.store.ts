@@ -39,34 +39,65 @@ export class FolderStore {
 
   /**
    * Create a new folder. Returns the created folder.
+   * Throws if name is empty or whitespace-only.
    * Throws if name violates UNIQUE constraint.
    */
   createFolder(name: string): Folder {
+    if (!name?.trim()) {
+      throw new Error("Folder name cannot be empty");
+    }
+
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    this.db.prepare(`
-      INSERT INTO folders (id, name, created_at, updated_at)
-      VALUES (?, ?, ?, ?)
-    `).run(id, name, now, now);
+    try {
+      this.db.prepare(`
+        INSERT INTO folders (id, name, created_at, updated_at)
+        VALUES (?, ?, ?, ?)
+      `).run(id, name.trim(), now, now);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("UNIQUE constraint failed")
+      ) {
+        throw new Error(`Folder with name "${name.trim()}" already exists`);
+      }
+      throw error;
+    }
 
     return this.getFolderById(id)!;
   }
 
   /**
    * Rename a folder. Returns the updated folder, or null if not found.
+   * Throws if name is empty or whitespace-only.
    * Throws if new name violates UNIQUE constraint.
    */
   renameFolder(id: string, name: string): Folder | null {
+    if (!name?.trim()) {
+      throw new Error("Folder name cannot be empty");
+    }
+
     const existing = this.getFolderById(id);
     if (!existing) {
       return null;
     }
 
     const now = new Date().toISOString();
-    this.db.prepare(`
-      UPDATE folders SET name = ?, updated_at = ? WHERE id = ?
-    `).run(name, now, id);
+
+    try {
+      this.db.prepare(`
+        UPDATE folders SET name = ?, updated_at = ? WHERE id = ?
+      `).run(name.trim(), now, id);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("UNIQUE constraint failed")
+      ) {
+        throw new Error(`Folder with name "${name.trim()}" already exists`);
+      }
+      throw error;
+    }
 
     return this.getFolderById(id);
   }
