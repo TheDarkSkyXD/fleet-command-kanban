@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core'
-import { AlertTriangle, Loader2, Plus } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import {
   useTickets,
   useProjectPhases,
@@ -99,7 +99,6 @@ export function Board({ projectId }: BoardProps) {
 
   // View mode from store
   const boardViewMode = useAppStore((s) => s.boardViewMode)
-  const openAddTicketModal = useAppStore((s) => s.openAddTicketModal)
   const showArchivedTickets = useAppStore((s) => s.showArchivedTickets)
 
   const handleToggleDisabled = useCallback(
@@ -268,16 +267,7 @@ export function Board({ projectId }: BoardProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden h-full">
       {/* Board Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={openAddTicketModal}
-          className="gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          Add Ticket
-        </Button>
+      <div className="flex items-center justify-end px-4 py-3">
         <ViewToggle />
       </div>
 
@@ -318,7 +308,7 @@ export function Board({ projectId }: BoardProps) {
                       phase={phase}
                       tickets={ticketsByPhase[phase] || []}
                       projectId={projectId}
-                      showAddTicket={false}
+                      showAddTicket={phase === phases?.[0]}
                       isManualPhase={isManual}
                       isDisabled={isDisabled}
                       isMigrating={isMigrating}
