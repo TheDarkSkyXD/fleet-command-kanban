@@ -151,7 +151,7 @@ export function ArtifactViewerFull({
                 <p className="text-xs text-text-muted mt-1">{artifact.description}</p>
               )}
             </div>
-            <div className="relative group/content flex-1 min-h-0">
+            <div className="relative group/content flex-1 min-h-0 flex flex-col">
               <ScrollArea className="flex-1 min-h-0">
                 <div className="p-4 relative">
                   {content && !isLoading && !error && (
