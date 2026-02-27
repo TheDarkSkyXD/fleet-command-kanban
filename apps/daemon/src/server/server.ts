@@ -57,7 +57,7 @@ import {
   getActiveSessionForTicket,
   getActiveSessionForBrainstorm,
 } from "../stores/session.store.js";
-import { scanPendingResponses, clearQuestion, clearResponse, readQuestion } from "../stores/chat.store.js";
+import { scanPendingResponses, clearQuestion, clearResponse, readQuestion, getPendingQuestionsByProject } from "../stores/chat.store.js";
 import { artifactChatStore } from "../stores/artifact-chat.store.js";
 import { SESSIONS_DIR, LOCK_FILE, PID_FILE, TASKS_DIR } from "../config/paths.js";
 import type { GlobalConfig, Project } from "../types/config.types.js";
@@ -516,11 +516,26 @@ export async function main(): Promise<void> {
 
   // Processing sync heartbeat - broadcasts currently processing sessions every 5 seconds
   // This ensures frontend stays in sync even if SSE events are missed
-  setInterval(() => {
+  setInterval(async () => {
     if (!sessionService) return;
     const processingByProject = sessionService.getProcessingByProject();
-    for (const [projectId, { ticketIds, brainstormIds }] of processingByProject) {
-      eventBus.emit("processing:sync", { projectId, ticketIds, brainstormIds });
+    const pendingByProject = await getPendingQuestionsByProject();
+
+    // Collect all project IDs from both maps
+    const allProjectIds = new Set([
+      ...processingByProject.keys(),
+      ...pendingByProject.keys(),
+    ]);
+
+    for (const projectId of allProjectIds) {
+      const processing = processingByProject.get(projectId);
+      const pendingTicketIds = pendingByProject.get(projectId) ?? [];
+      eventBus.emit("processing:sync", {
+        projectId,
+        ticketIds: processing?.ticketIds ?? [],
+        brainstormIds: processing?.brainstormIds ?? [],
+        pendingTicketIds,
+      });
     }
   }, 5000);
 
