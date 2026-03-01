@@ -152,45 +152,47 @@ export function ArtifactViewerFull({
               )}
             </div>
             <div className="group/content flex-1 min-h-0 flex flex-col bg-bg-primary">
-              {content && !isLoading && !error && (
-                <button
-                  onClick={handleCopy}
-                  aria-label="Copy to clipboard"
-                  className="absolute top-2 right-6 z-10 p-1.5 rounded-md
-                    bg-bg-tertiary/80 backdrop-blur-sm border border-border
-                    text-text-muted hover:text-text-primary
-                    opacity-0 group-hover/content:opacity-100
-                    transition-opacity cursor-pointer"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </button>
-              )}
               <ScrollArea className="flex-1 min-h-0">
-                <div className="p-4">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
-                    </div>
-                  ) : error ? (
-                    <div className="text-sm text-accent-red py-4">{error}</div>
-                  ) : content ? (
-                    <div
-                      className="prose prose-sm prose-invert max-w-none text-text-secondary
-                        [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0
-                        [&_a]:text-accent [&_a]:no-underline hover:[&_a]:underline
-                        [&_code]:bg-bg-tertiary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded
-                        [&_pre]:bg-bg-tertiary [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto
-                        [&_h1]:text-lg [&_h1]:text-text-primary [&_h1]:mt-4 [&_h1]:mb-2
-                        [&_h2]:text-base [&_h2]:text-text-primary [&_h2]:mt-4 [&_h2]:mb-2
-                        [&_h3]:text-sm [&_h3]:text-text-primary [&_h3]:mt-3 [&_h3]:mb-1
-                        [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic
-                        [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-border
-                        [&_td]:p-2 [&_td]:border-b [&_td]:border-border"
-                      dangerouslySetInnerHTML={{ __html: renderedContent }}
-                    />
-                  ) : (
-                    <p className="text-sm text-text-muted italic py-4">No content</p>
-                  )}
+                <div className="py-8 px-4 md:px-8">
+                  <div className="relative mx-auto max-w-3xl bg-bg-secondary rounded-lg shadow-lg p-8 md:p-12">
+                    {content && !isLoading && !error && (
+                      <button
+                        onClick={handleCopy}
+                        aria-label="Copy to clipboard"
+                        className="absolute top-3 right-3 z-10 p-1.5 rounded-md
+                          bg-bg-tertiary/80 backdrop-blur-sm border border-border
+                          text-text-muted hover:text-text-primary
+                          opacity-0 group-hover/content:opacity-100
+                          transition-opacity cursor-pointer"
+                      >
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                    )}
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+                      </div>
+                    ) : error ? (
+                      <div className="text-sm text-accent-red py-4">{error}</div>
+                    ) : content ? (
+                      <div
+                        className="prose prose-sm prose-invert max-w-none text-text-secondary
+                          [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0
+                          [&_a]:text-accent [&_a]:no-underline hover:[&_a]:underline
+                          [&_code]:bg-bg-tertiary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded
+                          [&_pre]:bg-bg-tertiary [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto
+                          [&_h1]:text-lg [&_h1]:text-text-primary [&_h1]:mt-4 [&_h1]:mb-2
+                          [&_h2]:text-base [&_h2]:text-text-primary [&_h2]:mt-4 [&_h2]:mb-2
+                          [&_h3]:text-sm [&_h3]:text-text-primary [&_h3]:mt-3 [&_h3]:mb-1
+                          [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic
+                          [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-border
+                          [&_td]:p-2 [&_td]:border-b [&_td]:border-border"
+                        dangerouslySetInnerHTML={{ __html: renderedContent }}
+                      />
+                    ) : (
+                      <p className="text-sm text-text-muted italic py-4">No content</p>
+                    )}
+                  </div>
                 </div>
               </ScrollArea>
             </div>
