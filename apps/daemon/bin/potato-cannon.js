@@ -4,6 +4,7 @@ import { program } from 'commander';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
+import { DEFAULT_PORT } from '@potato-cannon/shared';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
@@ -17,7 +18,7 @@ program
   .command('start')
   .description('Start the daemon')
   .option('-d, --daemon', 'Run in background')
-  .option('-p, --port <port>', 'Port to listen on', '8443')
+  .option('-p, --port <port>', 'Port to listen on', String(DEFAULT_PORT))
   .action(async (options) => {
     const { startServer } = await import('../dist/index.js');
     await startServer(options);
