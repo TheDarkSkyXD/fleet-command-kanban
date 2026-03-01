@@ -83,4 +83,13 @@ describe('TicketCard - Pending Badge', () => {
     expect(badge).toBeTruthy()
     expect(badge.className).toContain('text-amber-400')
   })
+
+  it('should apply pulsating glow animation to pending badge', () => {
+    mockIsTicketPending.mockReturnValue(true)
+
+    render(<TicketCard ticket={baseTicket as any} projectId="proj-1" />)
+
+    const badge = screen.getByText('?')
+    expect(badge.className).toContain('animate-pending-glow')
+  })
 })
