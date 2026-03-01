@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { MessageSquare, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { ListItemCard } from '@/components/ui/list-item-card'
 import { cn, timeAgo } from '@/lib/utils'
 import { useBrainstormMessage } from '@/hooks/useSSE'
 import { useAppStore } from '@/stores/appStore'
@@ -52,30 +51,29 @@ export function BrainstormCard({ brainstorm, projectId }: BrainstormCardProps) {
   const isSelected = brainstormSheetBrainstormId === brainstorm.id
 
   return (
-    <ListItemCard asChild isSelected={isSelected} className={cn(isThinking && 'thinking-shimmer')}>
-      <button onClick={handleClick} className="w-full text-left overflow-hidden">
-        <div className="flex items-start gap-3">
-          <div className="shrink-0 mt-0.5">
-            <MessageSquare className="h-4 w-4 text-text-muted" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 min-w-0">
-              <span className="text-text-primary text-sm font-medium line-clamp-2 flex-1 min-w-0">
-                {brainstorm.name}
-              </span>
-              <StatusIndicator
-                status={brainstorm.status}
-                hasUnseenQuestion={hasUnseenQuestion}
-              />
-            </div>
-            <span className="flex items-center gap-1 text-xs text-text-muted">
-              <Clock className="h-3 w-3" />
-              {timeAgo(brainstorm.updatedAt)}
-            </span>
-          </div>
-        </div>
-      </button>
-    </ListItemCard>
+    <button
+      onClick={handleClick}
+      className={cn(
+        'w-full text-left overflow-hidden relative',
+        'px-3 py-2 cursor-pointer transition-all',
+        'border border-transparent',
+        'hover:bg-white/5',
+        isSelected && 'border-accent/30 bg-accent/10',
+        isThinking && 'thinking-shimmer'
+      )}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <MessageSquare className="h-4 w-4 text-text-muted shrink-0" />
+        <span className="text-text-primary text-sm font-medium truncate flex-1 min-w-0">
+          {brainstorm.name}
+        </span>
+        <span className="flex items-center gap-1 text-xs text-text-muted shrink-0">
+          <Clock className="h-3 w-3" />
+          {timeAgo(brainstorm.updatedAt)}
+        </span>
+        <StatusIndicator status={brainstorm.status} hasUnseenQuestion={hasUnseenQuestion} />
+      </div>
+    </button>
   )
 }
 

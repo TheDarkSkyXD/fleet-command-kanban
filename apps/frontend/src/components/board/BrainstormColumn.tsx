@@ -32,7 +32,7 @@ export function BrainstormColumn({ projectId }: BrainstormColumnProps) {
 
       {/* Brainstorm Cards */}
       <div className="flex-1 p-2 overflow-y-auto min-h-[100px]">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-0">
           {brainstorms?.map((brainstorm) => (
             <BrainstormCard
               key={brainstorm.id}
