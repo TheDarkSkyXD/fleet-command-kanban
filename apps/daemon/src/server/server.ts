@@ -8,6 +8,7 @@ import { lock } from "proper-lockfile";
 
 import { DEFAULT_PORT } from "@potato-cannon/shared";
 import { eventBus } from "../utils/event-bus.js";
+import { formatListenUrls } from "../utils/listen-urls.js";
 import { Logger } from "../utils/logger.js";
 import { SessionService } from "../services/session/index.js";
 import { chatService } from "../services/chat.service.js";
@@ -612,7 +613,8 @@ export async function main(): Promise<void> {
     process.env.POTATO_DAEMON_PORT || globalConfig?.daemon?.port || DEFAULT_PORT;
   const port = typeof portValue === 'string' ? parseInt(portValue, 10) : portValue;
   server = app.listen(port, '0.0.0.0', async () => {
-    console.log(`Dashboard running at http://localhost:${port}`);
+    const urls = formatListenUrls('0.0.0.0', port);
+    console.log(`Dashboard running at:\n${urls.map((u) => `  ${u}`).join('\n')}`);
     await writePid(process.pid);
     await writeDaemonInfo({
       url: `http://localhost:${port}/mcp`,
