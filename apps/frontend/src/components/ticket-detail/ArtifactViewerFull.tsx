@@ -151,7 +151,7 @@ export function ArtifactViewerFull({
                 <p className="text-xs text-text-muted mt-1">{artifact.description}</p>
               )}
             </div>
-            <div className="relative group/content flex-1 min-h-0 flex flex-col">
+            <div className="group/content flex-1 min-h-0 flex flex-col bg-bg-primary">
               {content && !isLoading && !error && (
                 <button
                   onClick={handleCopy}
