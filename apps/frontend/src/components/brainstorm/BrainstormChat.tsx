@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from 'react'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { ArrowLeft, Send, Loader2, AlertCircle, Trash2, Bot, Brain } from 'lucide-react'
+import { renderMarkdown } from '@/lib/markdown'
 import { api } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -442,8 +441,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
   const renderedContent = useMemo(() => {
     if ((!isQuestion && !isNotification) || !message.text) return null
     try {
-      const html = marked(message.text) as string
-      return DOMPurify.sanitize(html)
+      return renderMarkdown(message.text)
     } catch {
       return null
     }

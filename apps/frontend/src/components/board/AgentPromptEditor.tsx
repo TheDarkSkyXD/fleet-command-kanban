@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { Bot, Loader2, X, Copy, RotateCcw, AlertTriangle } from 'lucide-react'
+import { renderMarkdown } from '@/lib/markdown'
 import { toast } from 'sonner'
 import { api } from '@/api/client'
 import { cn } from '@/lib/utils'
@@ -97,8 +96,7 @@ export function AgentPromptEditor({
   // Render markdown for default prompt
   const renderedDefault = useMemo(() => {
     if (!defaultContent) return ''
-    const html = marked(defaultContent) as string
-    return DOMPurify.sanitize(html)
+    return renderMarkdown(defaultContent)
   }, [defaultContent])
 
   // Handle escape key

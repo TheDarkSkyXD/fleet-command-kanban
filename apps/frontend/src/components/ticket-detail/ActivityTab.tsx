@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import { Send, Loader2, AlertCircle, Bell, Paperclip, Bot, Brain } from 'lucide-react'
+import { renderMarkdown } from '@/lib/markdown'
 import { api } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -361,8 +360,7 @@ function MessageBubble({ message, onArtifactClick }: MessageBubbleProps) {
   const renderedContent = useMemo(() => {
     if (!isQuestion || !message.text) return null
     try {
-      const html = marked(message.text) as string
-      return DOMPurify.sanitize(html)
+      return renderMarkdown(message.text)
     } catch {
       return null
     }

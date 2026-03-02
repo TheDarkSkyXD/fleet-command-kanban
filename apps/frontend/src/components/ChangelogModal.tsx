@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { marked } from "marked";
-import DOMPurify from "dompurify";
+import { renderMarkdown } from "@/lib/markdown";
 import { api } from "@/api/client";
 
 export interface ChangelogModalProps {
@@ -18,8 +17,7 @@ export function ChangelogModal({ projectId, onClose }: ChangelogModalProps) {
   const renderedChangelog = useMemo(() => {
     if (!data?.changelog) return null;
     try {
-      const html = marked(data.changelog) as string;
-      return DOMPurify.sanitize(html);
+      return renderMarkdown(data.changelog);
     } catch {
       return null;
     }

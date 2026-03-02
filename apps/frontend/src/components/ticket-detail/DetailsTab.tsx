@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
+import { renderMarkdown } from '@/lib/markdown'
 import {
   Pencil,
   Save,
@@ -207,8 +206,7 @@ export function DetailsTab({ projectId, ticketId, description, history }: Detail
   // Render markdown content
   const renderedDescription = useMemo(() => {
     if (!description) return ''
-    const html = marked(description) as string
-    return DOMPurify.sanitize(html)
+    return renderMarkdown(description)
   }, [description])
 
   // Check if description needs "See more" toggle
