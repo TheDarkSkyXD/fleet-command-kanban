@@ -12,6 +12,7 @@ import { Logger } from "../utils/logger.js";
 import { SessionService } from "../services/session/index.js";
 import { chatService } from "../services/chat.service.js";
 import { TelegramProvider } from "../providers/telegram/telegram.provider.js";
+import { SlackProvider } from "../providers/slack/slack.provider.js";
 import {
   registerProjectRoutes,
   registerTicketRoutes,
@@ -71,6 +72,7 @@ let server: ReturnType<Express["listen"]> | null = null;
 let sessionService: SessionService | null = null;
 let telegramProvider: TelegramProvider | null = null;
 let telegramMode = "none";
+let slackProvider: SlackProvider | null = null;
 
 /**
  * Acquire an exclusive lock to ensure only one daemon runs at a time.
@@ -722,6 +724,101 @@ export async function main(): Promise<void> {
     }
 
     console.log(`Telegram mode: ${telegramMode}`);
+
+    // Start Slack provider if configured
+    const slackConfig = globalConfig?.slack;
+    if (slackConfig?.appToken && slackConfig?.botToken) {
+      slackProvider = new SlackProvider();
+      await slackProvider.initialize(slackConfig);
+
+      slackProvider.setResponseCallback(
+        async (providerId, context, answer) => {
+          const handled = await chatService.handleResponse(
+            providerId,
+            context,
+            answer,
+          );
+
+          if (handled && context.brainstormId) {
+            try {
+              const activeSession = getActiveSessionForBrainstorm(context.brainstormId);
+
+              if (!activeSession || !sessionService?.isActive(activeSession.id)) {
+                const projects = getProjects();
+                const project = projects.get(context.projectId);
+
+                if (project && sessionService) {
+                  const newSessionId = await sessionService.spawnForBrainstorm(
+                    context.projectId,
+                    context.brainstormId,
+                    project.path,
+                  );
+                  console.log(
+                    `[Slack] Spawned new session ${newSessionId} to continue brainstorm`,
+                  );
+                }
+              }
+            } catch (err) {
+              console.error(
+                "[Slack] Error spawning brainstorm session:",
+                (err as Error).message,
+              );
+            }
+          } else if (handled && context.ticketId) {
+            try {
+              const activeSession = getActiveSessionForTicket(context.ticketId);
+
+              if (!activeSession || !sessionService?.isActive(activeSession.id)) {
+                const projects = getProjects();
+                const project = projects.get(context.projectId);
+
+                if (project && sessionService) {
+                  const pendingQuestion = await readQuestion(context.projectId, context.ticketId);
+
+                  if (pendingQuestion) {
+                    const newSessionId = await sessionService.resumeSuspendedTicket(
+                      context.projectId,
+                      context.ticketId,
+                      answer,
+                    );
+                    console.log(
+                      `[Slack] Resumed suspended session ${newSessionId} for ticket ${context.ticketId}`,
+                    );
+                  } else {
+                    const ticket = await getTicket(context.projectId, context.ticketId);
+                    if (ticket) {
+                      const newSessionId = await sessionService.spawnForTicket(
+                        context.projectId,
+                        context.ticketId,
+                        ticket.phase,
+                        project.path,
+                      );
+                      console.log(
+                        `[Slack] Spawned new session ${newSessionId} for ticket ${context.ticketId}`,
+                      );
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(
+                "[Slack] Error spawning ticket session:",
+                (err as Error).message,
+              );
+            }
+          }
+
+          return handled;
+        },
+      );
+
+      chatService.registerProvider(slackProvider);
+      await slackProvider.connect();
+      console.log("Slack provider registered (Socket Mode)");
+    } else {
+      console.log("Slack not configured - provider disabled");
+    }
+
     console.log("\nPotato Cannon Dashboard Ready!\n");
 
     // Recover interrupted sessions (mid-execution with worker-state.json)
@@ -748,6 +845,10 @@ async function shutdown(): Promise<void> {
 
   if (telegramProvider) {
     await telegramProvider.shutdown();
+  }
+
+  if (slackProvider) {
+    await slackProvider.shutdown();
   }
 
   if (sessionService) {
