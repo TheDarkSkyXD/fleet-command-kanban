@@ -23,10 +23,12 @@ vi.mock('./ArtifactChat', () => ({
   ArtifactChat: () => <div data-testid="artifact-chat">Chat</div>,
 }))
 
+const mockMutateAsync = vi.fn()
+
 // Mock useUpdateArtifact hook
 vi.mock('@/hooks/queries', () => ({
   useUpdateArtifact: () => ({
-    mutateAsync: vi.fn(),
+    mutateAsync: mockMutateAsync,
     isPending: false,
   }),
 }))
@@ -340,5 +342,232 @@ describe('ArtifactViewerFull - Copy Button', () => {
     expect(screen.getByLabelText('Copy to clipboard')).toBeTruthy()
 
     vi.useRealTimers()
+  })
+})
+
+describe('ArtifactViewerFull - Edit Mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.getTicketArtifact).mockResolvedValue(mockContent)
+    mockMutateAsync.mockResolvedValue({ ok: true, filename: 'test-artifact.md', isNewVersion: true })
+  })
+
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('renders the Edit button when content is loaded', async () => {
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+  })
+
+  it('shows editor when Edit is clicked', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    expect(screen.getByTestId('artifact-editor')).toBeTruthy()
+    expect(screen.getByText('Save')).toBeTruthy()
+    expect(screen.getByText('Cancel')).toBeTruthy()
+  })
+
+  it('Save button is disabled when no changes have been made', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const saveButton = screen.getByText('Save').closest('button')
+    expect(saveButton?.disabled).toBe(true)
+  })
+
+  it('calls mutateAsync with correct args on save', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const editor = screen.getByTestId('artifact-editor')
+    await user.clear(editor)
+    await user.type(editor, 'New content')
+
+    await user.click(screen.getByText('Save'))
+
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith({
+        filename: 'test-artifact.md',
+        content: 'New content',
+      })
+    })
+  })
+
+  it('exits edit mode after successful save', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const editor = screen.getByTestId('artifact-editor')
+    await user.clear(editor)
+    await user.type(editor, 'New content')
+
+    await user.click(screen.getByText('Save'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+      expect(screen.queryByTestId('artifact-editor')).toBeNull()
+    })
+  })
+
+  it('Cancel exits edit mode when no changes', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+    expect(screen.getByTestId('artifact-editor')).toBeTruthy()
+
+    await user.click(screen.getByText('Cancel'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+      expect(screen.queryByTestId('artifact-editor')).toBeNull()
+    })
+  })
+
+  it('Cancel shows discard dialog when there are unsaved changes', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const editor = screen.getByTestId('artifact-editor')
+    await user.clear(editor)
+    await user.type(editor, 'Modified content')
+
+    await user.click(screen.getByText('Cancel'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsaved Changes')).toBeTruthy()
+      expect(screen.getByText('Discard Changes')).toBeTruthy()
+    })
+  })
+
+  it('Discard Changes in dialog exits edit mode', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const editor = screen.getByTestId('artifact-editor')
+    await user.clear(editor)
+    await user.type(editor, 'Modified content')
+
+    await user.click(screen.getByText('Cancel'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Discard Changes')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Discard Changes'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+      expect(screen.queryByTestId('artifact-editor')).toBeNull()
+    })
   })
 })
