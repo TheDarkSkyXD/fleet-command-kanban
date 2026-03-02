@@ -570,4 +570,66 @@ describe('ArtifactViewerFull - Edit Mode', () => {
       expect(screen.queryByTestId('artifact-editor')).toBeNull()
     })
   })
+
+  it('shows error toast when save fails', async () => {
+    mockMutateAsync.mockRejectedValue(new Error('Network error'))
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const editor = screen.getByTestId('artifact-editor')
+    await user.clear(editor)
+    await user.type(editor, 'New content')
+
+    await user.click(screen.getByText('Save'))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to save artifact')
+    })
+
+    // Should remain in edit mode
+    expect(screen.getByTestId('artifact-editor')).toBeTruthy()
+  })
+
+  it('Escape key triggers cancel when editing with unsaved changes', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ArtifactViewerFull
+        projectId="proj-1"
+        ticketId="ticket-1"
+        artifact={mockArtifact}
+        onClose={vi.fn()}
+      />
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Edit')).toBeTruthy()
+    })
+
+    await user.click(screen.getByText('Edit'))
+
+    const editor = screen.getByTestId('artifact-editor')
+    await user.clear(editor)
+    await user.type(editor, 'Modified content')
+
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsaved Changes')).toBeTruthy()
+    })
+  })
 })
