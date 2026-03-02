@@ -26,7 +26,15 @@ export class SlackSocket {
 
     this.client.on("message", async ({ event, ack }) => {
       // Acknowledge the event immediately (required by Socket Mode)
-      await ack();
+      try {
+        await ack();
+      } catch (error) {
+        console.error(
+          "[SlackSocket] Failed to acknowledge message:",
+          (error as Error).message,
+        );
+        return;
+      }
 
       const msg = event as SlackMessageEvent;
 
