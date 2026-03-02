@@ -16,6 +16,7 @@ import {
   deleteTicketImage,
   listArtifacts,
   getArtifactContent,
+  saveArtifact,
   loadConversations,
   appendConversation,
 } from "../../stores/ticket.store.js";
@@ -342,6 +343,37 @@ export function registerTicketRoutes(
         res.type("text/plain").send(content);
       } catch (error) {
         res.status(404).json({ error: "Artifact not found" });
+      }
+    },
+  );
+
+  // Update artifact content (manual edit)
+  app.put(
+    "/api/tickets/:project/:id/artifacts/:filename",
+    async (req: Request, res: Response) => {
+      try {
+        const projectId = decodeURIComponent(req.params.project);
+        const ticketId = req.params.id;
+        const filename = req.params.filename;
+        const { content } = req.body;
+
+        if (typeof content !== "string") {
+          res.status(400).json({ error: "content is required and must be a string" });
+          return;
+        }
+
+        const result = await saveArtifact(projectId, ticketId, filename, content);
+
+        // Notify listeners so the frontend can update artifact list
+        eventBus.emit("ticket:updated", { projectId, ticketId });
+
+        res.json({
+          ok: true,
+          filename: result.filename,
+          isNewVersion: result.isNewVersion,
+        });
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
       }
     },
   );
