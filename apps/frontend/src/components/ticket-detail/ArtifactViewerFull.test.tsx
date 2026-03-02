@@ -23,6 +23,25 @@ vi.mock('./ArtifactChat', () => ({
   ArtifactChat: () => <div data-testid="artifact-chat">Chat</div>,
 }))
 
+// Mock useUpdateArtifact hook
+vi.mock('@/hooks/queries', () => ({
+  useUpdateArtifact: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+}))
+
+// Mock ArtifactEditor component
+vi.mock('./ArtifactEditor', () => ({
+  ArtifactEditor: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
+    <textarea
+      data-testid="artifact-editor"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}))
+
 // Mock window.matchMedia (needed for Radix UI components)
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
