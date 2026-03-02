@@ -1,13 +1,24 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Check, Copy, FileText, Loader2 } from 'lucide-react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Check, Copy, FileText, Loader2, Pencil, Save, X } from 'lucide-react'
 import { renderMarkdown } from '@/lib/markdown'
 import { api } from '@/api/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { ArtifactChat } from './ArtifactChat'
+import { ArtifactEditor } from './ArtifactEditor'
+import { useUpdateArtifact } from '@/hooks/queries'
 import type { Artifact } from '@potato-cannon/shared'
 
 interface ArtifactViewerFullProps {
@@ -28,6 +39,47 @@ export function ArtifactViewerFull({
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'document' | 'chat'>('document')
   const [copied, setCopied] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState('')
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false)
+
+  const updateArtifact = useUpdateArtifact(projectId, ticketId)
+
+  const hasUnsavedChanges = isEditing && editContent !== content
+
+  const handleStartEdit = useCallback(() => {
+    setEditContent(content)
+    setIsEditing(true)
+  }, [content])
+
+  const handleCancelEdit = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowDiscardDialog(true)
+    } else {
+      setIsEditing(false)
+    }
+  }, [hasUnsavedChanges])
+
+  const handleDiscardChanges = useCallback(() => {
+    setShowDiscardDialog(false)
+    setIsEditing(false)
+  }, [])
+
+  const handleSave = useCallback(async () => {
+    if (!artifact) return
+
+    try {
+      await updateArtifact.mutateAsync({
+        filename: artifact.filename,
+        content: editContent,
+      })
+      setContent(editContent)
+      setIsEditing(false)
+      toast.success('Artifact saved')
+    } catch (err) {
+      toast.error('Failed to save artifact')
+    }
+  }, [artifact, editContent, updateArtifact])
 
   // Clean up copy timeout on unmount
   useEffect(() => {
@@ -83,7 +135,11 @@ export function ArtifactViewerFull({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
+        if (isEditing) {
+          handleCancelEdit()
+        } else {
+          onClose()
+        }
       }
     }
 
@@ -91,11 +147,19 @@ export function ArtifactViewerFull({
       window.addEventListener('keydown', handleKeyDown)
       return () => window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [artifact, onClose])
+  }, [artifact, onClose, isEditing, handleCancelEdit])
+
+  // Reset edit state when artifact changes
+  useEffect(() => {
+    setIsEditing(false)
+    setEditContent('')
+    setShowDiscardDialog(false)
+  }, [artifact?.filename])
 
   if (!artifact) return null
 
   return (
+    <>
     <div
       className="fullscreen-modal fixed inset-0 z-50 bg-black/80"
     >
@@ -131,51 +195,98 @@ export function ArtifactViewerFull({
                           {artifact.type}
                         </Badge>
                       )}
+                      <div className="ml-auto flex items-center gap-1 shrink-0">
+                        {isEditing ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={handleCancelEdit}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <X className="h-3.5 w-3.5 mr-1" />
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleSave}
+                              disabled={!hasUnsavedChanges || updateArtifact.isPending}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <Save className="h-3.5 w-3.5 mr-1" />
+                              {updateArtifact.isPending ? 'Saving...' : 'Save'}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleStartEdit}
+                            disabled={isLoading || !!error}
+                            className="h-7 px-2 text-xs"
+                          >
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     {artifact.description && (
                       <p className="text-xs text-text-muted mt-1">{artifact.description}</p>
                     )}
                   </div>
-                  <div className="relative mx-auto max-w-5xl bg-bg-secondary md:rounded-lg md:shadow-lg p-4 md:p-12">
-                    {content && !isLoading && !error && (
-                      <button
-                        onClick={handleCopy}
-                        aria-label="Copy to clipboard"
-                        className="absolute top-3 right-3 z-10 p-1.5 rounded-md
-                          bg-bg-tertiary/80 backdrop-blur-sm border border-border
-                          text-text-muted hover:text-text-primary
-                          opacity-0 group-hover/content:opacity-100
-                          transition-opacity cursor-pointer"
-                      >
-                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </button>
-                    )}
-                    {isLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
-                      </div>
-                    ) : error ? (
-                      <div className="text-sm text-accent-red py-4">{error}</div>
-                    ) : content ? (
-                      <div
-                        className="prose prose-invert max-w-none text-text-secondary
-                          [&_p]:my-4 [&_ul]:my-4 [&_ol]:my-4 [&_li]:my-0
-                          [&_a]:text-accent [&_a]:no-underline hover:[&_a]:underline
-                          [&_code]:bg-bg-tertiary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:border [&_code]:border-border
-                          [&_pre]:bg-bg-tertiary [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:overflow-x-auto
-                          [&_pre_code]:border-0 [&_pre_code]:p-0 [&_pre_code]:bg-transparent
-                          [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-text-primary [&_h1]:mt-8 [&_h1]:mb-4
-                          [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-text-primary [&_h2]:mt-6 [&_h2]:mb-3
-                          [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-text-primary [&_h3]:mt-5 [&_h3]:mb-2
-                          [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-bg-tertiary/50 [&_blockquote]:py-2 [&_blockquote]:pr-4 [&_blockquote]:rounded-r
-                          [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-border
-                          [&_td]:p-2 [&_td]:border-b [&_td]:border-border"
-                        dangerouslySetInnerHTML={{ __html: renderedContent }}
+                  {isEditing ? (
+                    <div className="mx-auto max-w-5xl bg-bg-secondary md:rounded-lg md:shadow-lg overflow-hidden"
+                      style={{ height: 'calc(100vh - 120px)' }}
+                    >
+                      <ArtifactEditor
+                        value={editContent}
+                        onChange={setEditContent}
+                        filename={artifact.filename}
                       />
-                    ) : (
-                      <p className="text-sm text-text-muted italic py-4">No content</p>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="relative mx-auto max-w-5xl bg-bg-secondary md:rounded-lg md:shadow-lg p-4 md:p-12">
+                      {content && !isLoading && !error && (
+                        <button
+                          onClick={handleCopy}
+                          aria-label="Copy to clipboard"
+                          className="absolute top-3 right-3 z-10 p-1.5 rounded-md
+                            bg-bg-tertiary/80 backdrop-blur-sm border border-border
+                            text-text-muted hover:text-text-primary
+                            opacity-0 group-hover/content:opacity-100
+                            transition-opacity cursor-pointer"
+                        >
+                          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                        </button>
+                      )}
+                      {isLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
+                        </div>
+                      ) : error ? (
+                        <div className="text-sm text-accent-red py-4">{error}</div>
+                      ) : content ? (
+                        <div
+                          className="prose prose-invert max-w-none text-text-secondary
+                            [&_p]:my-4 [&_ul]:my-4 [&_ol]:my-4 [&_li]:my-0
+                            [&_a]:text-accent [&_a]:no-underline hover:[&_a]:underline
+                            [&_code]:bg-bg-tertiary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:border [&_code]:border-border
+                            [&_pre]:bg-bg-tertiary [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:overflow-x-auto
+                            [&_pre_code]:border-0 [&_pre_code]:p-0 [&_pre_code]:bg-transparent
+                            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-text-primary [&_h1]:mt-8 [&_h1]:mb-4
+                            [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-text-primary [&_h2]:mt-6 [&_h2]:mb-3
+                            [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-text-primary [&_h3]:mt-5 [&_h3]:mb-2
+                            [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:bg-bg-tertiary/50 [&_blockquote]:py-2 [&_blockquote]:pr-4 [&_blockquote]:rounded-r
+                            [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-border
+                            [&_td]:p-2 [&_td]:border-b [&_td]:border-border"
+                          dangerouslySetInnerHTML={{ __html: renderedContent }}
+                        />
+                      ) : (
+                        <p className="text-sm text-text-muted italic py-4">No content</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </div>
@@ -190,11 +301,31 @@ export function ArtifactViewerFull({
               projectId={projectId}
               ticketId={ticketId}
               artifactFilename={artifact.filename}
-              onClose={onClose}
+              onClose={isEditing && hasUnsavedChanges ? () => setShowDiscardDialog(true) : onClose}
             />
           </div>
         </div>
       </div>
     </div>
+
+      <Dialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unsaved Changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes. Are you sure you want to discard them?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowDiscardDialog(false)}>
+              Keep Editing
+            </Button>
+            <Button variant="destructive" onClick={handleDiscardChanges}>
+              Discard Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
