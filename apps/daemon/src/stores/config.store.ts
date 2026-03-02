@@ -13,6 +13,7 @@ import type {
   GlobalConfig,
   DaemonInfo,
   TelegramConfig,
+  SlackConfig,
   DaemonConfig,
 } from "../types/index.js";
 import { getDatabase } from "./db.js";
@@ -75,6 +76,16 @@ export interface ConfigStore {
    * Set daemon configuration.
    */
   setDaemonConfig(config: DaemonConfig): void;
+
+  /**
+   * Get Slack configuration.
+   */
+  getSlackConfig(): SlackConfig | null;
+
+  /**
+   * Set Slack configuration.
+   */
+  setSlackConfig(config: SlackConfig): void;
 }
 
 /**
@@ -150,6 +161,14 @@ export function createConfigStore(db: Database.Database): ConfigStore {
 
     setDaemonConfig(config: DaemonConfig): void {
       this.set("daemon", config);
+    },
+
+    getSlackConfig(): SlackConfig | null {
+      return this.get<SlackConfig>("slack");
+    },
+
+    setSlackConfig(config: SlackConfig): void {
+      this.set("slack", config);
     },
   };
 }

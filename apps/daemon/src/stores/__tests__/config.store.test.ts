@@ -201,4 +201,51 @@ describe("ConfigStore", () => {
       assert.deepStrictEqual(stored, daemonConfig);
     });
   });
+
+  describe("getSlackConfig", () => {
+    it("should return null when not set", () => {
+      const config = configStore.getSlackConfig();
+      assert.strictEqual(config, null);
+    });
+
+    it("should return slack config when set", () => {
+      const slackConfig = {
+        appToken: "xapp-1-A0123-1234567890-abc",
+        botToken: "xoxb-1234567890-abc",
+      };
+      configStore.setSlackConfig(slackConfig);
+
+      const config = configStore.getSlackConfig();
+
+      assert.deepStrictEqual(config, slackConfig);
+    });
+  });
+
+  describe("setSlackConfig", () => {
+    it("should store slack config", () => {
+      const slackConfig = {
+        appToken: "xapp-test",
+        botToken: "xoxb-test",
+      };
+      configStore.setSlackConfig(slackConfig);
+
+      const stored = configStore.get("slack");
+      assert.deepStrictEqual(stored, slackConfig);
+    });
+
+    it("should overwrite existing slack config", () => {
+      configStore.setSlackConfig({
+        appToken: "xapp-old",
+        botToken: "xoxb-old",
+      });
+      configStore.setSlackConfig({
+        appToken: "xapp-new",
+        botToken: "xoxb-new",
+      });
+
+      const config = configStore.getSlackConfig();
+      assert.strictEqual(config?.appToken, "xapp-new");
+      assert.strictEqual(config?.botToken, "xoxb-new");
+    });
+  });
 });
