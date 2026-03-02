@@ -63,6 +63,7 @@ describe('BrainstormCard', () => {
     const button = container.querySelector('button')
     expect(button?.className).toContain('border-accent/30')
     expect(button?.className).toContain('bg-accent/10')
+    expect(button?.className).toContain('rounded-lg')
   })
 
   it('applies thinking-shimmer class when active with session and no pending question', () => {
