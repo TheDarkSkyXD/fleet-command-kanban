@@ -368,6 +368,19 @@ export function useTicketArtifacts(projectId: string | null, ticketId: string | 
   })
 }
 
+export function useUpdateArtifact(projectId: string | null, ticketId: string | null) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ filename, content }: { filename: string; content: string }) =>
+      api.updateTicketArtifact(projectId!, ticketId!, filename, content),
+    onSuccess: () => {
+      // Invalidate the artifact list so version counts refresh
+      queryClient.invalidateQueries({ queryKey: ['artifacts', projectId, ticketId] })
+    },
+  })
+}
+
 // ============ Ticket Conversations ============
 
 export function useTicketConversations(projectId: string | null, ticketId: string | null) {

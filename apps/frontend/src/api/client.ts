@@ -188,6 +188,15 @@ export const api = {
     return response.text()
   },
 
+  updateTicketArtifact: (projectId: string, ticketId: string, filename: string, content: string) =>
+    request<{ ok: true; filename: string; isNewVersion: boolean }>(
+      `/api/tickets/${encodeURIComponent(projectId)}/${ticketId}/artifacts/${encodeURIComponent(filename)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ content }),
+      }
+    ),
+
   // ============ Ticket Conversations ============
 
   getTicketConversations: (projectId: string, ticketId: string) =>
