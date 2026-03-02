@@ -48,3 +48,55 @@ describe('appStore - pendingTickets', () => {
     expect(useAppStore.getState().isTicketPending('nonexistent', 'ticket-1')).toBe(false)
   })
 })
+
+describe('appStore - ticketActivity', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      ticketActivity: new Map(),
+    })
+  })
+
+  it('should return undefined for ticket with no activity', () => {
+    const result = useAppStore.getState().getTicketActivity('proj-1', 'ticket-1')
+    expect(result).toBeUndefined()
+  })
+
+  it('should set activity for a ticket', () => {
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Reading documentation')
+    expect(useAppStore.getState().getTicketActivity('proj-1', 'ticket-1')).toBe('Reading documentation')
+  })
+
+  it('should not affect other tickets when setting activity', () => {
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Reading documentation')
+    expect(useAppStore.getState().getTicketActivity('proj-1', 'ticket-2')).toBeUndefined()
+  })
+
+  it('should not affect other projects when setting activity', () => {
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Reading documentation')
+    expect(useAppStore.getState().getTicketActivity('proj-2', 'ticket-1')).toBeUndefined()
+  })
+
+  it('should update activity for the same ticket', () => {
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Reading documentation')
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Making code changes')
+    expect(useAppStore.getState().getTicketActivity('proj-1', 'ticket-1')).toBe('Making code changes')
+  })
+
+  it('should clear activity for a ticket', () => {
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Reading documentation')
+    useAppStore.getState().clearTicketActivity('proj-1', 'ticket-1')
+    expect(useAppStore.getState().getTicketActivity('proj-1', 'ticket-1')).toBeUndefined()
+  })
+
+  it('should handle clearing from non-existent project gracefully', () => {
+    useAppStore.getState().clearTicketActivity('nonexistent', 'ticket-1')
+    expect(useAppStore.getState().getTicketActivity('nonexistent', 'ticket-1')).toBeUndefined()
+  })
+
+  it('should track activity independently across multiple projects', () => {
+    useAppStore.getState().setTicketActivity('proj-1', 'ticket-1', 'Reading documentation')
+    useAppStore.getState().setTicketActivity('proj-2', 'ticket-1', 'Making code changes')
+    expect(useAppStore.getState().getTicketActivity('proj-1', 'ticket-1')).toBe('Reading documentation')
+    expect(useAppStore.getState().getTicketActivity('proj-2', 'ticket-1')).toBe('Making code changes')
+  })
+})
