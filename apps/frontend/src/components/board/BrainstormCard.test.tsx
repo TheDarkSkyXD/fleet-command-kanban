@@ -50,8 +50,12 @@ describe('BrainstormCard', () => {
     const cardElement = container.querySelector('.rounded-lg.shadow-md')
     expect(cardElement).toBeNull()
 
-    // Should have a top-level button
+    // Idle state should not have rounded corners (check for standalone rounded-lg class, not hover:rounded-lg)
     const button = container.querySelector('button')
+    const classes = button?.className?.split(' ') || []
+    expect(classes).not.toContain('rounded-lg')
+
+    // Should have a top-level button
     expect(button).toBeDefined()
   })
 
