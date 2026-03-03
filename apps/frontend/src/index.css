@@ -789,9 +789,20 @@ button, a, [role="button"] {
   }
 }
 
-/* Sidebar-specific shimmer variant - inherits button border radius */
+/* Sidebar-specific shimmer variant - z-index fix for active state visibility */
 .thinking-shimmer[data-slot="sidebar-menu-item"]::before {
   border-radius: var(--radius-md);
+  z-index: 1;
+  background:
+    linear-gradient(var(--color-sidebar-accent), var(--color-sidebar-accent)) padding-box,
+    conic-gradient(
+      from var(--border-angle),
+      transparent 0deg,
+      transparent 250deg,
+      var(--color-accent) 280deg,
+      var(--color-accent-purple) 340deg,
+      transparent 360deg
+    ) border-box;
 }
 
 /* ================================================
