@@ -9,7 +9,7 @@ export class SlackApi {
 
   /**
    * Discover a channel the bot is a member of.
-   * Prefers non-#general channels; falls back to #general if it's the only one.
+   * Returns a non-#general channel the bot belongs to, or null if none exist.
    * Returns { id, name } or null if the bot isn't in any channel.
    * Requires the `channels:read` scope.
    */
@@ -26,8 +26,8 @@ export class SlackApi {
 
     const channels = result.channels ?? [];
 
-    // Prefer a non-#general channel; fall back to #general
-    const match = channels.find((ch) => !ch.is_general) ?? channels[0];
+    // Find a non-#general channel only
+    const match = channels.find((ch) => !ch.is_general);
     if (match?.id && match?.name) {
       return { id: match.id, name: match.name };
     }
