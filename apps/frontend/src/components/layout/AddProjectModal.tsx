@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { FolderBrowser } from './FolderBrowser'
 
 // Check if running in Electron
 const isElectron = !!(window as { electronAPI?: unknown }).electronAPI
@@ -46,6 +47,7 @@ export function AddProjectModal() {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [browserOpen, setBrowserOpen] = useState(false)
 
   const { data: templates, isLoading: templatesLoading } = useTemplates()
 
@@ -77,15 +79,25 @@ export function AddProjectModal() {
         if (result && typeof result === 'string') {
           setPath(result)
           if (!displayName) {
-            const folderName = result.split('/').pop() || result.split('\\').pop()
+            const folderName = result.replace(/[\\/]+$/, '').split(/[\\/]/).pop()
             if (folderName) setDisplayName(folderName)
           }
         }
+      } else {
+        setBrowserOpen(true)
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         console.error('Failed to open folder picker:', err)
       }
+    }
+  }, [displayName])
+
+  const handleFolderSelected = useCallback((selectedPath: string) => {
+    setPath(selectedPath)
+    if (!displayName) {
+      const folderName = selectedPath.replace(/[\\/]+$/, '').split(/[\\/]/).pop()
+      if (folderName) setDisplayName(folderName)
     }
   }, [displayName])
 
@@ -120,117 +132,137 @@ export function AddProjectModal() {
     }
   }
 
+  // When folder browser is open, hide the main modal to avoid nested dialog conflicts
+  const showMainModal = isOpen && !browserOpen
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="bg-bg-secondary border-border sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-text-primary">Add Project</DialogTitle>
-          <DialogDescription className="text-text-secondary">
-            Add an existing project directory to Potato Cannon.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={showMainModal} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="bg-bg-secondary border-border sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-text-primary">Add Project</DialogTitle>
+            <DialogDescription className="text-text-secondary">
+              Add an existing project directory to Potato Cannon.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <label htmlFor="project-path" className="text-sm text-text-secondary">
-              Project Path
-            </label>
-            {isElectron ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBrowse}
-                disabled={isSubmitting}
-                className="w-full justify-start bg-bg-tertiary border-border h-auto py-3 px-4 hover:bg-bg-hover"
-              >
-                <FolderOpen className="h-5 w-5 mr-3 text-text-muted shrink-0" />
-                {path ? (
-                  <span className="font-mono text-sm text-text-primary truncate">{path}</span>
-                ) : (
-                  <span className="text-text-muted">Choose a folder...</span>
-                )}
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  id="project-path"
-                  type="text"
-                  value={path}
-                  onChange={(e) => setPath(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="/path/to/your/project"
+          <div className="space-y-4 py-2 overflow-hidden">
+            <div className="space-y-2">
+              <label htmlFor="project-path" className="text-sm text-text-secondary">
+                Project Path
+              </label>
+              {isElectron ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBrowse}
                   disabled={isSubmitting}
-                  autoFocus
-                  className="flex-1 bg-bg-tertiary border border-border rounded-md px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-              </div>
+                  className="w-full justify-start bg-bg-tertiary border-border h-auto py-3 px-4 hover:bg-bg-hover overflow-hidden min-w-0"
+                >
+                  <FolderOpen className="h-5 w-5 mr-3 text-text-muted shrink-0" />
+                  {path ? (
+                    <span className="font-mono text-sm text-text-primary truncate">{path}</span>
+                  ) : (
+                    <span className="text-text-muted">Choose a folder...</span>
+                  )}
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    id="project-path"
+                    type="text"
+                    value={path}
+                    onChange={(e) => setPath(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="/path/to/your/project"
+                    disabled={isSubmitting}
+                    autoFocus
+                    className="flex-1 min-w-0 bg-bg-tertiary border border-border rounded-md px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBrowse}
+                    disabled={isSubmitting}
+                    title="Browse for folder"
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="project-name" className="text-sm text-text-secondary">
+                Display Name <span className="text-text-muted">(optional)</span>
+              </label>
+              <input
+                id="project-name"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="My Project"
+                disabled={isSubmitting}
+                className="w-full bg-bg-tertiary border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-text-secondary">
+                Workflow Template
+              </label>
+              <Select
+                value={selectedTemplate || ''}
+                onValueChange={setSelectedTemplate}
+                disabled={isSubmitting || templatesLoading}
+              >
+                <SelectTrigger className="w-full bg-bg-tertiary border-border">
+                  <SelectValue placeholder={templatesLoading ? 'Loading templates...' : 'Select a template'} />
+                </SelectTrigger>
+                <SelectContent className="bg-bg-secondary border-border">
+                  {templates?.map((template) => (
+                    <SelectItem key={template.name} value={template.name}>
+                      {template.name}{template.isDefault ? ' (default)' : ''}
+                    </SelectItem>
+                  ))}
+                  {templates?.length === 0 && (
+                    <SelectItem value="" disabled>
+                      No templates available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {error && (
+              <p className="text-sm text-accent-red">{error}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="project-name" className="text-sm text-text-secondary">
-              Display Name <span className="text-text-muted">(optional)</span>
-            </label>
-            <input
-              id="project-name"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="My Project"
-              disabled={isSubmitting}
-              className="w-full bg-bg-tertiary border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent"
-            />
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={!path.trim() || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Project'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          <div className="space-y-2">
-            <label className="text-sm text-text-secondary">
-              Workflow Template
-            </label>
-            <Select
-              value={selectedTemplate || ''}
-              onValueChange={setSelectedTemplate}
-              disabled={isSubmitting || templatesLoading}
-            >
-              <SelectTrigger className="w-full bg-bg-tertiary border-border">
-                <SelectValue placeholder={templatesLoading ? 'Loading templates...' : 'Select a template'} />
-              </SelectTrigger>
-              <SelectContent className="bg-bg-secondary border-border">
-                {templates?.map((template) => (
-                  <SelectItem key={template.name} value={template.name}>
-                    {template.name}{template.isDefault ? ' (default)' : ''}
-                  </SelectItem>
-                ))}
-                {templates?.length === 0 && (
-                  <SelectItem value="" disabled>
-                    No templates available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {error && (
-            <p className="text-sm text-accent-red">{error}</p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!path.trim() || isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              'Add Project'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <FolderBrowser
+        open={browserOpen}
+        onClose={() => setBrowserOpen(false)}
+        onSelect={handleFolderSelected}
+      />
+    </>
   )
 }

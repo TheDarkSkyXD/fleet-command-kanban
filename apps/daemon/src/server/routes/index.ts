@@ -13,3 +13,4 @@ export { registerTaskRoutes } from "./tasks.routes.js";
 export { registerRalphRoutes, getPendingVerdict, getVerdictKey } from "./ralph.routes.js";
 export { registerArtifactChatRoutes } from './artifact-chat.routes.js';
 export { registerFolderRoutes } from "./folders.routes.js";
+export { registerFilesystemRoutes } from "./filesystem.routes.js";
