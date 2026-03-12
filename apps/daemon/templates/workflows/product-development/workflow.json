@@ -2,7 +2,7 @@
   "$schema": "./workflow.schema.json",
   "name": "product-development",
   "description": "Standard product development workflow with refinement, architecture, and build phases",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "phases": [
     {
       "id": "Refinement",
@@ -178,14 +178,25 @@
         }
       ],
       "transitions": {
-        "next": "Pull Requests"
+        "next": "Human Review"
       },
       "requiresWorktree": true
+    },
+    {
+      "id": "Human Review",
+      "name": "Human Review",
+      "description": "Human review of completed build before pull request",
+      "workers": [],
+      "transitions": {
+        "next": "Pull Requests",
+        "manual": true
+      }
     },
     {
       "id": "Pull Requests",
       "name": "Pull Requests",
       "description": "Create pull request for completed build",
+      "skippable": true,
       "workers": [
         {
           "id": "pr-agent",
@@ -195,7 +206,7 @@
         }
       ],
       "transitions": {
-        "next": null
+        "next": "Done"
       }
     }
   ]

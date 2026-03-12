@@ -74,6 +74,31 @@ function isManualCheckpoint(
   return !phaseHasAutomation(phaseConfig)
 }
 
+/**
+ * Checks if a phase can be skipped/disabled by the user.
+ * Includes manual checkpoints AND phases explicitly marked as skippable.
+ */
+function isSkippablePhase(
+  phaseConfig: TemplatePhase | undefined,
+  phaseName: string,
+  allPhases: string[]
+): boolean {
+  // Manual checkpoints are always skippable
+  if (isManualCheckpoint(phaseConfig, phaseName, allPhases)) return true
+
+  // First and last phases cannot be skipped
+  if (allPhases.length > 0) {
+    if (phaseName === allPhases[0] || phaseName === allPhases[allPhases.length - 1]) {
+      return false
+    }
+  }
+
+  if (!phaseConfig) return false
+
+  // Phases explicitly marked as skippable
+  return !!phaseConfig.skippable
+}
+
 interface BoardProps {
   projectId: string
 }
@@ -298,7 +323,7 @@ export function Board({ projectId }: BoardProps) {
 
                 {phases?.map((phase) => {
                   const phaseConfig = templateConfig?.phases.find((p) => p.name === phase)
-                  const isManual = isManualCheckpoint(phaseConfig, phase, phases)
+                  const isSkippable = isSkippablePhase(phaseConfig, phase, phases)
                   const isDisabled = currentProject?.disabledPhases?.includes(phase) ?? false
                   const isMigrating = currentProject?.disabledPhaseMigration ?? false
 
@@ -309,10 +334,10 @@ export function Board({ projectId }: BoardProps) {
                       tickets={ticketsByPhase[phase] || []}
                       projectId={projectId}
                       showAddTicket={phase === phases?.[0]}
-                      isManualPhase={isManual}
+                      isManualPhase={isSkippable}
                       isDisabled={isDisabled}
                       isMigrating={isMigrating}
-                      onToggleDisabled={isManual ? () => handleToggleDisabled(phase) : undefined}
+                      onToggleDisabled={isSkippable ? () => handleToggleDisabled(phase) : undefined}
                       swimlaneColor={currentProject?.swimlaneColors?.[phase]}
                       onColorChange={(color) => handleSwimlaneColorChange(phase, color)}
                     />

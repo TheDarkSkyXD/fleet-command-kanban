@@ -88,6 +88,8 @@ export async function resolveTargetPhase(
   // Find first enabled phase starting from requestedPhase
   for (let i = startIndex; i < phases.length; i++) {
     const phase = phases[i];
+    // Skip "Blocked" - it's a special state only entered explicitly
+    if (phase.name === "Blocked") continue;
     const isDisabled = project.disabledPhases?.includes(phase.name) ?? false;
     if (!isDisabled) {
       return phase.name;

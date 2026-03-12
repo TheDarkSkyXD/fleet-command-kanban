@@ -50,6 +50,7 @@ export interface Phase {
   workers: Worker[];
   transitions: Transitions;
   requiresWorktree?: boolean;
+  skippable?: boolean;
 }
 
 // Template types

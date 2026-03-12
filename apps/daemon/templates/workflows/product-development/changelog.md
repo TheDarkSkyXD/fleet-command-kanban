@@ -2,6 +2,19 @@
 
 All notable changes to the product-development workflow.
 
+## [1.5.0] - 2026-03-12
+
+### New
+
+- **Human Review phase** - A new manual checkpoint after Build where you can review completed work before creating a pull request
+- **Skippable Pull Requests** - The Pull Requests phase can now be toggled off, sending tickets straight to Done
+- **Skippable Human Review** - The Human Review phase can also be toggled off if you prefer to go straight from Build to Pull Requests
+- **Auto-advance to Done** - Tickets now automatically move to Done after the PR agent completes, instead of staying in Pull Requests
+
+### Improved
+
+- Disabling phases no longer accidentally routes tickets through the Blocked column
+
 ## [1.4.0] - 2026-02-10
 
 ### Improved

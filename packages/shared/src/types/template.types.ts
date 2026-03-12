@@ -13,6 +13,7 @@ export interface TemplatePhase {
   name: string
   description?: string
   requiresWorktree?: boolean
+  skippable?: boolean
   transitions?: {
     next?: string
     manual?: boolean

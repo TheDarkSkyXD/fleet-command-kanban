@@ -386,17 +386,9 @@ export async function getWorkflowWithFullPhases(
     transitions: { next: null },
   };
 
-  // Update last workflow phase to point to Blocked
-  const workflowPhases = template.phases.map((p, i) => {
-    if (i === template.phases.length - 1 && p.transitions.next === "Done") {
-      return { ...p, transitions: { ...p.transitions, next: "Blocked" } };
-    }
-    return p;
-  });
-
   return {
     ...template,
-    phases: [ideasPhase, ...workflowPhases, blockedPhase, donePhase],
+    phases: [ideasPhase, ...template.phases, blockedPhase, donePhase],
   };
 }
 
@@ -696,17 +688,9 @@ export async function getTemplateWithFullPhasesForProject(
     transitions: { next: null },
   };
 
-  // Update last workflow phase to point to Blocked
-  const workflowPhases = template.phases.map((p, i) => {
-    if (i === template.phases.length - 1 && p.transitions.next === "Done") {
-      return { ...p, transitions: { ...p.transitions, next: "Blocked" } };
-    }
-    return p;
-  });
-
   return {
     ...template,
-    phases: [ideasPhase, ...workflowPhases, blockedPhase, donePhase],
+    phases: [ideasPhase, ...template.phases, blockedPhase, donePhase],
   };
 }
 

@@ -56,6 +56,11 @@
           "type": "boolean",
           "description": "Whether this phase requires a git worktree",
           "default": false
+        },
+        "skippable": {
+          "type": "boolean",
+          "description": "Whether this phase can be skipped (disabled) by the user. When skipped, tickets pass through to the next enabled phase automatically.",
+          "default": false
         }
       }
     },
