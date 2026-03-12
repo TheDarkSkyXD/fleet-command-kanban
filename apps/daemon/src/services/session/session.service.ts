@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 
 import { SESSIONS_DIR } from "../../config/paths.js";
 import { eventBus } from "../../utils/event-bus.js";
+import { findClaudeBinary, getClaudeSpawnEnv } from "../../utils/claude-path.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -331,14 +332,22 @@ export class SessionService {
     // Get full path to node (required when running under Electron where PATH may not include node)
     let nodePath: string;
     try {
-      nodePath = execSync("which node", { encoding: "utf-8" }).trim();
+      const whichCmd = process.platform === "win32" ? "where node" : "which node";
+      const result = execSync(whichCmd, { encoding: "utf-8", stdio: "pipe" }).trim();
+      nodePath = result.split(/\r?\n/)[0];
     } catch {
       // Fallback to common locations
-      const fallbacks = [
-        path.join(process.env.HOME || "", ".nvm", "versions", "node", "v22.14.0", "bin", "node"),
-        path.join(process.env.HOME || "", ".local", "bin", "node"),
-        "/usr/local/bin/node",
-      ];
+      const home = process.env.HOME || process.env.USERPROFILE || "";
+      const fallbacks = process.platform === "win32"
+        ? [
+            path.join(home, "AppData", "Roaming", "nvm", "node.exe"),
+            "node",
+          ]
+        : [
+            path.join(home, ".nvm", "versions", "node", "v22.14.0", "bin", "node"),
+            path.join(home, ".local", "bin", "node"),
+            "/usr/local/bin/node",
+          ];
       nodePath = fallbacks.find((p) => existsSync(p)) || "node";
     }
 
@@ -386,12 +395,7 @@ export class SessionService {
     // Agent instructions are included in the prompt
     args.push("--print", prompt);
 
-    let claudePath: string;
-    try {
-      claudePath = execSync("which claude", { encoding: "utf-8" }).trim();
-    } catch {
-      claudePath = path.join(process.env.HOME || "", ".local", "bin", "claude");
-    }
+    const claudePath = findClaudeBinary();
     console.log(`[spawnClaudeSession] Spawning ${agentType} at: ${claudePath}`);
 
     const proc = pty.spawn(claudePath, args, {
@@ -400,7 +404,7 @@ export class SessionService {
       rows: 40,
       cwd: worktreePath,
       env: {
-        ...process.env,
+        ...getClaudeSpawnEnv(),
         POTATO_PROJECT_ID: projectId,
         POTATO_TICKET_ID: ticketId,
         POTATO_BRAINSTORM_ID: brainstormId,
@@ -653,14 +657,22 @@ export class SessionService {
     // Get full path to node (required when running under Electron where PATH may not include node)
     let nodePath: string;
     try {
-      nodePath = execSync("which node", { encoding: "utf-8" }).trim();
+      const whichCmd = process.platform === "win32" ? "where node" : "which node";
+      const result = execSync(whichCmd, { encoding: "utf-8", stdio: "pipe" }).trim();
+      nodePath = result.split(/\r?\n/)[0];
     } catch {
       // Fallback to common locations
-      const fallbacks = [
-        path.join(process.env.HOME || "", ".nvm", "versions", "node", "v22.14.0", "bin", "node"),
-        path.join(process.env.HOME || "", ".local", "bin", "node"),
-        "/usr/local/bin/node",
-      ];
+      const home = process.env.HOME || process.env.USERPROFILE || "";
+      const fallbacks = process.platform === "win32"
+        ? [
+            path.join(home, "AppData", "Roaming", "nvm", "node.exe"),
+            "node",
+          ]
+        : [
+            path.join(home, ".nvm", "versions", "node", "v22.14.0", "bin", "node"),
+            path.join(home, ".local", "bin", "node"),
+            "/usr/local/bin/node",
+          ];
       nodePath = fallbacks.find((p) => existsSync(p)) || "node";
     }
 
@@ -717,12 +729,7 @@ export class SessionService {
     }
     args.push("--print", fullPrompt);
 
-    let claudePath: string;
-    try {
-      claudePath = execSync("which claude", { encoding: "utf-8" }).trim();
-    } catch {
-      claudePath = path.join(process.env.HOME || "", ".local", "bin", "claude");
-    }
+    const claudePath = findClaudeBinary();
 
     const proc = pty.spawn(claudePath, args, {
       name: "xterm-256color",
@@ -730,7 +737,7 @@ export class SessionService {
       rows: 40,
       cwd: projectPath,
       env: {
-        ...process.env,
+        ...getClaudeSpawnEnv(),
         POTATO_PROJECT_ID: projectId,
         POTATO_BRAINSTORM_ID: brainstormId,
       },

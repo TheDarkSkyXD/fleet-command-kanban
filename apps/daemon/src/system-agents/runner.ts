@@ -1,12 +1,12 @@
 // src/system-agents/runner.ts
 
-import { execSync } from "child_process";
 import path from "path";
 import crypto from "crypto";
 import pty from "node-pty";
 import { fileURLToPath } from "url";
 import type { SystemAgentResult, SystemAgentOptions } from "./types.js";
 import { loadSystemAgent } from "./loader.js";
+import { findClaudeBinary, getClaudeSpawnEnv } from "../utils/claude-path.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,12 +67,7 @@ export async function runSystemAgent<TInput>(
   ];
 
   // Find claude binary
-  let claudePath: string;
-  try {
-    claudePath = execSync("which claude", { encoding: "utf-8" }).trim();
-  } catch {
-    claudePath = path.join(process.env.HOME || "", ".local", "bin", "claude");
-  }
+  const claudePath = findClaudeBinary();
 
   return new Promise((resolve) => {
     let outputBuffer = "";
@@ -84,7 +79,7 @@ export async function runSystemAgent<TInput>(
       rows: 40,
       cwd: workingDir,
       env: {
-        ...process.env,
+        ...getClaudeSpawnEnv(),
         POTATO_PROJECT_ID: projectId,
         POTATO_TICKET_ID: ticketId,
         POTATO_BRAINSTORM_ID: brainstormId,

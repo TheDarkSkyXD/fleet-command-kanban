@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
-import { execSync } from "child_process";
 import { createWriteStream } from "fs";
 import path from "path";
 import pty from "node-pty";
 import { fileURLToPath } from "url";
+import { findClaudeBinary, getClaudeSpawnEnv } from "../../utils/claude-path.js";
 import { artifactChatStore } from "../../stores/artifact-chat.store.js";
 import {
   readQuestion,
@@ -343,12 +343,7 @@ async function spawnArtifactChatSession(
     prompt,
   ];
 
-  let claudePath: string;
-  try {
-    claudePath = execSync("which claude", { encoding: "utf-8" }).trim();
-  } catch {
-    claudePath = path.join(process.env.HOME || "", ".local", "bin", "claude");
-  }
+  const claudePath = findClaudeBinary();
 
   const proc = pty.spawn(claudePath, args, {
     name: "xterm-256color",
@@ -356,7 +351,7 @@ async function spawnArtifactChatSession(
     rows: 40,
     cwd: projectPath,
     env: {
-      ...process.env,
+      ...getClaudeSpawnEnv(),
       POTATO_PROJECT_ID: projectId,
       POTATO_TICKET_ID: ticketId,
       POTATO_BRAINSTORM_ID: session.contextId,
