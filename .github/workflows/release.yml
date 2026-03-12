@@ -46,8 +46,15 @@ jobs:
       - name: Build daemon
         run: pnpm build:daemon
 
+      - name: Typecheck frontend
+        working-directory: apps/frontend
+        run: npx tsc -b
+
       - name: Build frontend
-        run: pnpm build:frontend
+        working-directory: apps/frontend
+        run: npx vite build
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Build desktop (Electron)
         working-directory: apps/desktop
