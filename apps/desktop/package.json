@@ -2,7 +2,11 @@
   "name": "@fleet-command/desktop",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://github.com/crathgeb/fleet-command",
+  "homepage": "https://github.com/TheDarkSkyXD/fleet-command-kanban",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheDarkSkyXD/fleet-command-kanban.git"
+  },
   "author": {
     "name": "Chris Rathgeb",
     "email": "chrisrathgeb@gmail.com"
@@ -13,7 +17,7 @@
     "dev": "electron-vite build && electron .",
     "dev:watch": "electron-vite dev",
     "prebuild": "node scripts/prepare-daemon.cjs",
-    "build": "electron-vite build && electron-builder",
+    "build": "electron-vite build && electron-builder --publish never",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf out release build/daemon"
