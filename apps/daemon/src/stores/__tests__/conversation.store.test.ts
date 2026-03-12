@@ -19,7 +19,7 @@ describe("ConversationStore", () => {
   let projectId: string;
 
   before(() => {
-    testDbPath = path.join(os.tmpdir(), `potato-conv-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-conv-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

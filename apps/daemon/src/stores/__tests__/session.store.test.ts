@@ -20,7 +20,7 @@ describe("SessionStore", () => {
   let projectId: string;
 
   before(() => {
-    testDbPath = path.join(os.tmpdir(), `potato-session-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-session-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

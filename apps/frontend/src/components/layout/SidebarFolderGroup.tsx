@@ -19,8 +19,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Link } from '@tanstack/react-router'
 import { getProjectIcon } from '@/components/configure/ProjectIconPicker'
-import type { Folder as FolderType } from '@potato-cannon/shared'
-import type { Project } from '@potato-cannon/shared'
+import type { Folder as FolderType } from '@fleet-command/shared'
+import type { Project } from '@fleet-command/shared'
 
 interface SidebarFolderGroupProps {
   folder: FolderType

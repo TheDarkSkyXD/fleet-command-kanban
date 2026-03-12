@@ -13,12 +13,12 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.73.0
         version: 0.73.0(zod@3.25.76)
+      '@fleet-command/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.26.0(zod@3.25.76)
-      '@potato-cannon/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@slack/socket-mode':
         specifier: ^2.0.5
         version: 2.0.5
@@ -65,7 +65,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@potato-cannon/daemon':
+      '@fleet-command/daemon':
         specifier: workspace:*
         version: link:../daemon
       better-sqlite3:
@@ -111,7 +111,7 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.3)
-      '@potato-cannon/shared':
+      '@fleet-command/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@radix-ui/react-checkbox':

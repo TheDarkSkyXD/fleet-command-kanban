@@ -1,5 +1,5 @@
 ---
-name: potato:add-comment-to-task
+name: fleet-command:add-comment-to-task
 description: "Use this skill to add comments or notes to an existing task. Comments help track progress, document decisions, or explain issues."
 ---
 

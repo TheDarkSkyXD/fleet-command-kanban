@@ -20,12 +20,12 @@ import path from 'path';
 import os from 'os';
 
 // Context from environment (set by session spawner)
-const PROJECT_ID = process.env.POTATO_PROJECT_ID || '';
-const TICKET_ID = process.env.POTATO_TICKET_ID || '';
-const BRAINSTORM_ID = process.env.POTATO_BRAINSTORM_ID || '';
+const PROJECT_ID = process.env.FLEET_PROJECT_ID || '';
+const TICKET_ID = process.env.FLEET_TICKET_ID || '';
+const BRAINSTORM_ID = process.env.FLEET_BRAINSTORM_ID || '';
 
 async function getDaemonUrl(): Promise<string> {
-  const daemonFile = path.join(os.homedir(), '.potato-cannon', 'daemon.json');
+  const daemonFile = path.join(os.homedir(), '.fleet-command', 'daemon.json');
   try {
     const data = JSON.parse(await fs.readFile(daemonFile, 'utf-8'));
     return `http://localhost:${data.port}`;
@@ -69,7 +69,7 @@ async function callTool(
 
 // Create MCP server
 const server = new Server(
-  { name: 'potato-cannon', version: '4.0.0' },
+  { name: 'fleet-command', version: '4.0.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -109,11 +109,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToo
 
 async function main() {
   if (!PROJECT_ID) {
-    console.error('Error: POTATO_PROJECT_ID environment variable is required');
+    console.error('Error: FLEET_PROJECT_ID environment variable is required');
     process.exit(1);
   }
   if (!TICKET_ID && !BRAINSTORM_ID) {
-    console.error('Error: Either POTATO_TICKET_ID or POTATO_BRAINSTORM_ID is required');
+    console.error('Error: Either FLEET_TICKET_ID or FLEET_BRAINSTORM_ID is required');
     process.exit(1);
   }
 

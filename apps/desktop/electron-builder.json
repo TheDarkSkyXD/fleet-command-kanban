@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.potato-cannon.app",
-  "productName": "Potato Cannon",
+  "appId": "com.fleet-command.app",
+  "productName": "Fleet Command",
   "directories": {
     "output": "release"
   },

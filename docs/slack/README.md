@@ -1,11 +1,11 @@
 # Slack Integration
 
-Potato Cannon can notify you and ask questions in a Slack channel (or DM) while it works. Each ticket gets its own thread so conversations stay organized.
+Fleet Command can notify you and ask questions in a Slack channel (or DM) while it works. Each ticket gets its own thread so conversations stay organized.
 
 ## Prerequisites
 
 - A Slack workspace where you have permission to install apps
-- A running potato-cannon daemon (`potato-cannon start`)
+- A running fleet-command daemon (`fleet-command start`)
 
 ## 1. Create a Slack App
 
@@ -19,7 +19,7 @@ Potato Cannon can notify you and ask questions in a Slack channel (or DM) while 
 
 1. In your new app's settings, go to **Settings → Basic Information**
 2. Scroll to **App-Level Tokens** and click **Generate Token and Scopes**
-3. Name the token (e.g. `potato-cannon`) and add the **`connections:write`** scope
+3. Name the token (e.g. `fleet-command`) and add the **`connections:write`** scope
 4. Click **Generate** — copy the token that starts with `xapp-`
 
 ## 3. Install the App
@@ -28,9 +28,9 @@ Potato Cannon can notify you and ask questions in a Slack channel (or DM) while 
 2. Click **Install to Workspace** and approve the permissions
 3. Copy the **Bot User OAuth Token** — it starts with `xoxb-`
 
-## 4. Configure potato-cannon
+## 4. Configure fleet-command
 
-Edit `~/.potato-cannon/config.json` and add a `slack` key with your two tokens:
+Edit `~/.fleet-command/config.json` and add a `slack` key with your two tokens:
 
 ```json
 {
@@ -61,7 +61,7 @@ Set `channelId` to a channel ID like `C0123456789`.
 
 To find a channel ID: open Slack, right-click the channel name → **View channel details** — the ID is at the bottom of the dialog.
 
-Make sure to **invite the bot** to the channel (`/invite @Potato Cannon`).
+Make sure to **invite the bot** to the channel (`/invite @Fleet Command`).
 
 ### Option B: Direct message
 
@@ -78,7 +78,7 @@ Add the bot to exactly one channel for predictable behavior. If the bot isn't in
 ## 6. Restart the Daemon
 
 ```bash
-potato-cannon stop && potato-cannon start
+fleet-command stop && fleet-command start
 ```
 
 The daemon reads `config.json` at startup. Look for a log line like:
@@ -93,4 +93,4 @@ or, if using auto-discovery:
 [SlackProvider] Auto-discovered channel: #your-channel (C0123456789)
 ```
 
-Slack integration is now active. Potato Cannon will create a new thread in your channel for each ticket and ask questions there as it works.
+Slack integration is now active. Fleet Command will create a new thread in your channel for each ticket and ask questions there as it works.

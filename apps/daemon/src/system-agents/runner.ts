@@ -41,13 +41,13 @@ export async function runSystemAgent<TInput>(
 
   const mcpConfig = {
     mcpServers: {
-      "potato-cannon": {
+      "fleet-command": {
         command: "node",
         args: [mcpProxyPath],
         env: {
-          POTATO_PROJECT_ID: projectId,
-          POTATO_TICKET_ID: ticketId,
-          POTATO_BRAINSTORM_ID: brainstormId,
+          FLEET_PROJECT_ID: projectId,
+          FLEET_TICKET_ID: ticketId,
+          FLEET_BRAINSTORM_ID: brainstormId,
         },
       },
     },
@@ -80,9 +80,9 @@ export async function runSystemAgent<TInput>(
       cwd: workingDir,
       env: {
         ...getClaudeSpawnEnv(),
-        POTATO_PROJECT_ID: projectId,
-        POTATO_TICKET_ID: ticketId,
-        POTATO_BRAINSTORM_ID: brainstormId,
+        FLEET_PROJECT_ID: projectId,
+        FLEET_TICKET_ID: ticketId,
+        FLEET_BRAINSTORM_ID: brainstormId,
       },
     });
 

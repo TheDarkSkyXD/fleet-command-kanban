@@ -32,10 +32,10 @@ export type {
   BrainstormMessagesResponse,
   WorkerNode,
   WorkerTreeResponse,
-} from '@potato-cannon/shared'
+} from '@fleet-command/shared'
 
 // Re-export constants from shared package (only DEFAULT_PORT since others come from ticket.types.ts)
-export { DEFAULT_PORT } from '@potato-cannon/shared'
+export { DEFAULT_PORT } from '@fleet-command/shared'
 
 // Ticket types - these re-export shared types plus daemon-specific extensions
 export * from "./ticket.types.js";

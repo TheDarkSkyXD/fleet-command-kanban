@@ -318,13 +318,13 @@ async function spawnArtifactChatSession(
 
   const mcpConfig = {
     mcpServers: {
-      "potato-cannon": {
+      "fleet-command": {
         command: "node",
         args: [mcpProxyPath],
         env: {
-          POTATO_PROJECT_ID: projectId,
-          POTATO_TICKET_ID: ticketId,
-          POTATO_BRAINSTORM_ID: session.contextId, // Use contextId for chat routing
+          FLEET_PROJECT_ID: projectId,
+          FLEET_TICKET_ID: ticketId,
+          FLEET_BRAINSTORM_ID: session.contextId, // Use contextId for chat routing
         },
       },
     },
@@ -352,9 +352,9 @@ async function spawnArtifactChatSession(
     cwd: projectPath,
     env: {
       ...getClaudeSpawnEnv(),
-      POTATO_PROJECT_ID: projectId,
-      POTATO_TICKET_ID: ticketId,
-      POTATO_BRAINSTORM_ID: session.contextId,
+      FLEET_PROJECT_ID: projectId,
+      FLEET_TICKET_ID: ticketId,
+      FLEET_BRAINSTORM_ID: session.contextId,
     },
   });
 

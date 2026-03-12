@@ -19,7 +19,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@potato-cannon/shared": ["../../packages/shared/src"]
+      "@fleet-command/shared": ["../../packages/shared/src"]
     }
   },
   "include": ["src"],

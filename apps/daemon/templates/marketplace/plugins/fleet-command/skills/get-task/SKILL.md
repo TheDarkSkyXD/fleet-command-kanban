@@ -1,5 +1,5 @@
 ---
-name: potato:get-task
+name: fleet-command:get-task
 description: "Use this skill to retrieve details of a specific task by its ID. Returns the task's description, status, comments, and other metadata."
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: potato:create-artifacts
+name: fleet-command:create-artifacts
 description: "You MUST use this skill in order to create, update, edit, or build artifacts or files.  Artifacts can be of any type but are typically markdown files."
 ---
 
@@ -14,14 +14,14 @@ To create an artifact perform the following steps:
 
 ## Writing Artifacts
 
-Artifacts are saved to `.potato/cache/tickets/{ticketId}/artifacts/` where `{ticketId}` is the current ticket/ticket identifier.
+Artifacts are saved to `.fleet-command/cache/tickets/{ticketId}/artifacts/` where `{ticketId}` is the current ticket/ticket identifier.
 
 Example:
 
 ```
-.potato/cache/tickets/POT-2/artifacts/refinement.md
-.potato/cache/tickets/POT-2/artifacts/architecture.md
-.potato/cache/tickets/POT-2/artifacts/diagram.pdf
+.fleet-command/cache/tickets/POT-2/artifacts/refinement.md
+.fleet-command/cache/tickets/POT-2/artifacts/architecture.md
+.fleet-command/cache/tickets/POT-2/artifacts/diagram.pdf
 ```
 
 1. Determine the current `ticketId` from context
@@ -33,7 +33,7 @@ Artifact files can and should be attached to tickets, to attach an artifact to a
 
 ```
 attach_artifact(
-  file_path: ".potato/cache/tickets/{ticketId}/artifacts/{artifact-name}.{ext}",
+  file_path: ".fleet-command/cache/tickets/{ticketId}/artifacts/{artifact-name}.{ext}",
   artifact_type: ".md" | ".txt" | ".pdf" | etc.,
   description: "Optional description of the artifact"
 )
@@ -43,7 +43,7 @@ attach_artifact(
 
 ```
 attach_artifact(
-  file_path: ".potato/cache/tickets/POT-2/artifacts/refinement.md",
+  file_path: ".fleet-command/cache/tickets/POT-2/artifacts/refinement.md",
   artifact_type: ".md",
   description: "Initial requirements refinement"
 )

@@ -14,7 +14,7 @@ describe("TemplateStore", () => {
   let testDbPath: string;
 
   before(() => {
-    testDbPath = path.join(os.tmpdir(), `potato-template-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-template-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

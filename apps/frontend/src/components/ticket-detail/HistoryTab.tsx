@@ -12,7 +12,7 @@ import {
 import { formatDate, formatTime, timeAgo } from '@/lib/utils'
 import { useSessions, useSessionLog, useTicketArtifacts, useProjects } from '@/hooks/queries'
 import { ArtifactViewerFull } from './ArtifactViewerFull'
-import type { TicketHistoryEntry, SessionLogEntry, Artifact } from '@potato-cannon/shared'
+import type { TicketHistoryEntry, SessionLogEntry, Artifact } from '@fleet-command/shared'
 
 interface HistoryTabProps {
   projectId: string

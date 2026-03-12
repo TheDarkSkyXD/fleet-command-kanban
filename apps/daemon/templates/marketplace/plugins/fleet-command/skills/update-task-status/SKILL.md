@@ -1,5 +1,5 @@
 ---
-name: potato:update-task-status
+name: fleet-command:update-task-status
 description: "Use this skill to update the status of an existing task."
 ---
 

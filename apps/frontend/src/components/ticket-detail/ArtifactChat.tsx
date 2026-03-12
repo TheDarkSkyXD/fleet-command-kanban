@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn, timeAgo } from '@/lib/utils'
 import { Linkify } from '@/components/ui/linkify'
 import { useBrainstormMessage, useSessionEnded } from '@/hooks/useSSE'
-import type { ArtifactChatMessage } from '@potato-cannon/shared'
+import type { ArtifactChatMessage } from '@fleet-command/shared'
 
 interface ArtifactChatProps {
   projectId: string

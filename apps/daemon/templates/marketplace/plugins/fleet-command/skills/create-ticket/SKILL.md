@@ -1,11 +1,11 @@
 ---
-name: potato:create-ticket
+name: fleet-command:create-ticket
 description: "Use this skill to create a new ticket in the current project. Use this to convert a brainstorm into a formal ticket for tracking development work."
 ---
 
 # Creating Tickets
 
-Use the `create_ticket` MCP tool to create tickets. Tickets are the primary unit of work tracking in Potato Cannon.
+Use the `create_ticket` MCP tool to create tickets. Tickets are the primary unit of work tracking in Fleet Command.
 
 ## The Rule
 

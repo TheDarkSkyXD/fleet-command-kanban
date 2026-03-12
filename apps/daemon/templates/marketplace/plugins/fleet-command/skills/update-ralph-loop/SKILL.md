@@ -1,5 +1,5 @@
 ---
-name: potato:update-ralph-loop
+name: fleet-command:update-ralph-loop
 description: "Use this to update the status of a ralph loop status for any iterative workflow. Controls whether to continue iterating, complete successfully, or escalate when blocked."
 ---
 

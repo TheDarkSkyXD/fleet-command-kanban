@@ -1,17 +1,17 @@
 {
-  "name": "@potato-cannon/daemon",
+  "name": "@fleet-command/daemon",
   "version": "4.0.0",
   "description": "Multi-agent software engineering daemon",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "potato-cannon": "./bin/potato-cannon.js"
+    "fleet-command": "./bin/fleet-command.js"
   },
   "scripts": {
     "build": "tsc && node -e \"const fs=require('fs'),p=require('path'),s='src/system-agents/agents',d='dist/system-agents/agents';fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>fs.copyFileSync(p.join(s,f),p.join(d,f)))\"",
     "start": "node dist/index.js",
-    "dev": "node bin/potato-cannon.js start",
+    "dev": "node bin/fleet-command.js start",
     "dev:watch": "tsc -b -w & NODE_ENV=development node --watch dist/index.js",
     "test": "node --experimental-test-module-mocks --test dist/**/*.test.js",
     "typecheck": "tsc --noEmit",
@@ -20,7 +20,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@potato-cannon/shared": "workspace:*",
+    "@fleet-command/shared": "workspace:*",
     "@slack/socket-mode": "^2.0.5",
     "@slack/web-api": "^7.14.1",
     "better-sqlite3": "^12.6.2",

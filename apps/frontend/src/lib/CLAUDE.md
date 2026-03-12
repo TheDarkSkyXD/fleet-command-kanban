@@ -1,6 +1,6 @@
 # Lib Utilities
 
-Shared utility functions for the Potato Cannon frontend.
+Shared utility functions for the Fleet Command frontend.
 
 ## Functions
 
@@ -36,8 +36,8 @@ Converts Claude Code tool names to user-friendly activity descriptions. Used in 
 
 | Category | Examples | Output |
 |----------|----------|--------|
-| **Skills** | `potato:read-artifacts`, `superpowers:brainstorming` | "Reading project documents", "Exploring ideas" |
-| **MCP Tools** | `mcp__potato-cannon__chat_ask` | "Preparing question" |
+| **Skills** | `fleet-command:read-artifacts`, `superpowers:brainstorming` | "Reading project documents", "Exploring ideas" |
+| **MCP Tools** | `mcp__fleet-command__chat_ask` | "Preparing question" |
 | **Read** | Based on file extension | "Reviewing TypeScript code", "Checking configuration" |
 | **Grep/Glob** | Pattern-based | "Searching codebase", "Finding test files" |
 | **Edit/Write** | — | "Making code changes", "Writing new file" |

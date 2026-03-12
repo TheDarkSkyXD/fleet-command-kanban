@@ -12,9 +12,9 @@ export async function ensureWorktree(
   ticketId: string,
   branchPrefix?: string,
 ): Promise<string> {
-  const worktreesDir = path.join(projectPath, ".potato", "worktrees");
+  const worktreesDir = path.join(projectPath, ".fleet-command", "worktrees");
   const worktreePath = path.join(worktreesDir, ticketId);
-  const branchName = `${branchPrefix || 'potato'}/${ticketId}`;
+  const branchName = `${branchPrefix || 'fleet'}/${ticketId}`;
 
   // Check if worktree already exists and is valid
   if (existsSync(path.join(worktreePath, ".git"))) {
@@ -94,7 +94,7 @@ export async function ensureWorktree(
 
 /**
  * Remove git worktree and rename the branch for preservation during restart.
- * Renames branch to potato-resets/{ticketId}-{timestamp} to preserve commits.
+ * Renames branch to fleet-resets/{ticketId}-{timestamp} to preserve commits.
  * Used during phase restart to clean up but preserve git work.
  */
 export async function removeWorktreeAndRenameBranch(
@@ -106,10 +106,10 @@ export async function removeWorktreeAndRenameBranch(
   let branchRenamed = false;
   let newBranchName: string | null = null;
 
-  const worktreePath = path.join(projectPath, ".potato", "worktrees", ticketId);
-  const branchName = `potato/${ticketId}`;
+  const worktreePath = path.join(projectPath, ".fleet-command", "worktrees", ticketId);
+  const branchName = `fleet/${ticketId}`;
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const resetBranchName = `potato-resets/${ticketId}-${timestamp}`;
+  const resetBranchName = `fleet-resets/${ticketId}-${timestamp}`;
 
   // Remove worktree first (must be done before branch rename)
   if (existsSync(worktreePath)) {
@@ -169,8 +169,8 @@ export async function removeWorktreeAndBranch(
   let worktreeRemoved = false;
   let branchRemoved = false;
 
-  const worktreePath = path.join(projectPath, ".potato", "worktrees", ticketId);
-  const branchName = `potato/${ticketId}`;
+  const worktreePath = path.join(projectPath, ".fleet-command", "worktrees", ticketId);
+  const branchName = `fleet/${ticketId}`;
 
   // Remove worktree first (must be done before branch deletion)
   if (existsSync(worktreePath)) {

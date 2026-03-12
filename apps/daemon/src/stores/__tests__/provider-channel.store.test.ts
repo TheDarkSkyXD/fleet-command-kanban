@@ -27,7 +27,7 @@ describe("ProviderChannelStore", () => {
   before(() => {
     testDbPath = path.join(
       os.tmpdir(),
-      `potato-channel-test-${Date.now()}.db`
+      `fc-channel-test-${Date.now()}.db`
     );
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");

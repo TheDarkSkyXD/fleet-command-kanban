@@ -1,10 +1,10 @@
 # Stores
 
-Data persistence layer for Potato Cannon.
+Data persistence layer for Fleet Command.
 
 ## Database
 
-**Location:** `~/.potato-cannon/potato.db` (SQLite)
+**Location:** `~/.fleet-command/fleet-command.db` (SQLite)
 
 **Library:** `better-sqlite3` - synchronous API, fast, works with Electron.
 
@@ -52,7 +52,7 @@ if (version < 6) {
 | V3 | Unified conversations, sessions, and brainstorms |
 | V4 | Backfill conversation_id for existing tickets |
 | V5 | Tasks, provider channels, ralph feedback, artifacts, templates, config |
-| V6 | Add `branch_prefix` column to projects table (default: 'potato') |
+| V6 | Add `branch_prefix` column to projects table (default: 'fleet') |
 
 ## Tables
 
@@ -85,11 +85,11 @@ if (version < 6) {
 
 ## Directory Structure
 
-**Global directory:** `~/.potato-cannon/`
+**Global directory:** `~/.fleet-command/`
 
 ```
-~/.potato-cannon/
-├── potato.db                    # SQLite database
+~/.fleet-command/
+├── fleet-command.db                    # SQLite database
 ├── config.json                  # Legacy global config (file-based)
 ├── daemon.json                  # Running daemon info
 ├── daemon.pid                   # Daemon PID file
@@ -365,7 +365,7 @@ getLatestVersion(artifactId: string): StoredArtifactVersion | null
 createArtifactStore(db: Database.Database): ArtifactStore
 ```
 
-**Hybrid storage:** SQLite stores metadata; actual files are in `~/.potato-cannon/tasks/{project}/{ticket}/artifacts/`.
+**Hybrid storage:** SQLite stores metadata; actual files are in `~/.fleet-command/tasks/{project}/{ticket}/artifacts/`.
 
 **Uniqueness:** One artifact per filename per ticket.
 
@@ -404,7 +404,7 @@ getAgentPromptForProject(projectId: string, agentPath: string): Promise<string>
 createTemplateStore(db: Database.Database): TemplateStore
 ```
 
-**Hybrid storage:** SQLite stores registry (name, version, isDefault); workflow files are in `~/.potato-cannon/templates/{name}/`.
+**Hybrid storage:** SQLite stores registry (name, version, isDefault); workflow files are in `~/.fleet-command/templates/{name}/`.
 
 **Full phases:** `getWorkflowWithFullPhases()` injects Ideas, Blocked, and Done phases around the workflow phases.
 
@@ -414,7 +414,7 @@ createTemplateStore(db: Database.Database): TemplateStore
 
 Per-project template storage and agent prompt overrides. Enables project-specific customizations that survive template updates.
 
-**Directory:** `~/.potato-cannon/project-data/{projectId}/template/`
+**Directory:** `~/.fleet-command/project-data/{projectId}/template/`
 
 ```typescript
 // Template management
@@ -438,7 +438,7 @@ getProjectChangelog(projectId: string): Promise<string | null>
 
 **Example:**
 ```
-~/.potato-cannon/project-data/my-project/template/agents/
+~/.fleet-command/project-data/my-project/template/agents/
 ├── refinement.md           # Standard (from template)
 └── refinement.override.md  # Custom override (takes priority)
 ```
@@ -468,9 +468,9 @@ getConfigStore(): ConfigStore
 ```
 
 **File-based (legacy):**
-- `~/.potato-cannon/config.json` - Global settings (Telegram, daemon port)
-- `~/.potato-cannon/daemon.json` - Running daemon info (port, pid, start time)
-- `~/.potato-cannon/daemon.pid` - Daemon PID file
+- `~/.fleet-command/config.json` - Global settings (Telegram, daemon port)
+- `~/.fleet-command/daemon.json` - Running daemon info (port, pid, start time)
+- `~/.fleet-command/daemon.pid` - Daemon PID file
 
 ```typescript
 // File-based functions
@@ -539,7 +539,7 @@ appendTicketLog(projectId: string, ticketId: string, message: string): Promise<v
 readTicketLogs(projectId: string, ticketId: string): Promise<string>
 ```
 
-**Location:** Logs stored at `~/.potato-cannon/projects/{projectId}/tickets/{ticketId}/logs/daemon.log`
+**Location:** Logs stored at `~/.fleet-command/projects/{projectId}/tickets/{ticketId}/logs/daemon.log`
 
 ## Conventions
 

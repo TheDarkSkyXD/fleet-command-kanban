@@ -353,13 +353,13 @@ export class SessionService {
 
     const mcpConfig = {
       mcpServers: {
-        "potato-cannon": {
+        "fleet-command": {
           command: nodePath,
           args: [mcpProxyPath],
           env: {
-            POTATO_PROJECT_ID: projectId,
-            POTATO_TICKET_ID: ticketId,
-            POTATO_BRAINSTORM_ID: brainstormId,
+            FLEET_PROJECT_ID: projectId,
+            FLEET_TICKET_ID: ticketId,
+            FLEET_BRAINSTORM_ID: brainstormId,
           },
         },
       },
@@ -405,9 +405,9 @@ export class SessionService {
       cwd: worktreePath,
       env: {
         ...getClaudeSpawnEnv(),
-        POTATO_PROJECT_ID: projectId,
-        POTATO_TICKET_ID: ticketId,
-        POTATO_BRAINSTORM_ID: brainstormId,
+        FLEET_PROJECT_ID: projectId,
+        FLEET_TICKET_ID: ticketId,
+        FLEET_BRAINSTORM_ID: brainstormId,
       },
     });
 
@@ -678,13 +678,13 @@ export class SessionService {
 
     const mcpConfig = {
       mcpServers: {
-        "potato-cannon": {
+        "fleet-command": {
           command: nodePath,
           args: [mcpProxyPath],
           env: {
-            POTATO_PROJECT_ID: projectId,
-            POTATO_TICKET_ID: "",
-            POTATO_BRAINSTORM_ID: brainstormId,
+            FLEET_PROJECT_ID: projectId,
+            FLEET_TICKET_ID: "",
+            FLEET_BRAINSTORM_ID: brainstormId,
           },
         },
       },
@@ -738,8 +738,8 @@ export class SessionService {
       cwd: projectPath,
       env: {
         ...getClaudeSpawnEnv(),
-        POTATO_PROJECT_ID: projectId,
-        POTATO_BRAINSTORM_ID: brainstormId,
+        FLEET_PROJECT_ID: projectId,
+        FLEET_BRAINSTORM_ID: brainstormId,
       },
     });
 
@@ -860,7 +860,7 @@ export class SessionService {
     const images = await listTicketImages(projectId, ticketId);
 
     const project = getProjectById(projectId);
-    const branchPrefix = project?.branchPrefix || 'potato';
+    const branchPrefix = project?.branchPrefix || 'fleet';
 
     const needsWorktree = await phaseRequiresWorktree(projectId, phase);
     const worktreePath = needsWorktree
@@ -988,7 +988,7 @@ export class SessionService {
       phase: ticket.phase,
     });
 
-    const branchPrefix = project.branchPrefix || "potato";
+    const branchPrefix = project.branchPrefix || "fleet";
     const needsWorktree = await phaseRequiresWorktree(projectId, ticket.phase);
     const worktreePath = needsWorktree
       ? await ensureWorktree(project.path, ticketId, branchPrefix)

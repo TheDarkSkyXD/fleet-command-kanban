@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
-const STORAGE_KEY = 'potato-cannon-archive-warning-dismissed'
+const STORAGE_KEY = 'fleet-command-archive-warning-dismissed'
 
 interface ArchiveConfirmDialogProps {
   open: boolean

@@ -11,7 +11,7 @@ export interface SessionMeta {
   status?: "running" | "completed" | "failed";
   exitCode?: number;
   endedAt?: string;
-  /** The agent type being run (e.g., 'potato:refinement') */
+  /** The agent type being run (e.g., 'fleet-command:refinement') */
   agentType?: string;
   /** Current stage index within the phase */
   stage?: number;

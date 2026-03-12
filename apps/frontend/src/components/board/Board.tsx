@@ -35,7 +35,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import type { Ticket, TemplatePhase } from '@potato-cannon/shared'
+import type { Ticket, TemplatePhase } from '@fleet-command/shared'
 
 /**
  * Checks if a phase has automation configured (agents, ralphLoop, or ticketLoop)

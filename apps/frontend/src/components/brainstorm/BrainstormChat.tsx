@@ -17,7 +17,7 @@ import {
 import { cn, timeAgo, formatToolActivity } from '@/lib/utils'
 import { Linkify } from '@/components/ui/linkify'
 import { useSessionOutput, useBrainstormMessage, useSessionEnded } from '@/hooks/useSSE'
-import type { BrainstormMessage } from '@potato-cannon/shared'
+import type { BrainstormMessage } from '@fleet-command/shared'
 
 interface BrainstormChatProps {
   projectId: string

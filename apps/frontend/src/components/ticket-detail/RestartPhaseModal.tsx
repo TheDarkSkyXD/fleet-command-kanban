@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useRestartTicket } from '@/hooks/queries'
-import type { TicketHistoryEntry } from '@potato-cannon/shared'
+import type { TicketHistoryEntry } from '@fleet-command/shared'
 
 interface RestartPhaseModalProps {
   open: boolean
@@ -141,7 +141,7 @@ export function RestartPhaseModal({
               <li>Re-run automation for the target phase</li>
             </ul>
             <p className="mt-2 text-text-muted text-xs">
-              Your git commits are preserved under potato-resets/.
+              Your git commits are preserved under fleet-resets/.
             </p>
           </div>
 

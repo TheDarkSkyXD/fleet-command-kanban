@@ -9,7 +9,7 @@ import type { ChatContext, OutboundMessage } from "../../chat-provider.types.js"
 
 function createMockApi() {
   return {
-    discoverChannel: mock.fn(async () => ({ id: "C_DISCOVERED", name: "potato-cannon" })),
+    discoverChannel: mock.fn(async () => ({ id: "C_DISCOVERED", name: "fleet-command" })),
     postMessage: mock.fn(
       async (_channel: string, _text: string, _opts?: { thread_ts?: string }) =>
         "1234567890.123456",

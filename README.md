@@ -1,12 +1,12 @@
-# Potato Cannon
+# Fleet Command
 
-Multi-agent software engineering daemon for autonomous development pipelines. Potato Cannon orchestrates Claude Code sessions through configurable workflow phases, enabling adversarial review loops, task-based execution, and human-in-the-loop feedback.
+Multi-agent software engineering daemon for autonomous development pipelines. Fleet Command orchestrates Claude Code sessions through configurable workflow phases, enabling adversarial review loops, task-based execution, and human-in-the-loop feedback.
 
-![Potato Cannon Dashboard](docs/images/image.png)
+![Fleet Command Dashboard](docs/images/image.png)
 
 ## What It Does
 
-Potato Cannon turns your feature requests into working code through a structured pipeline:
+Fleet Command turns your feature requests into working code through a structured pipeline:
 
 1. **Brainstorm** - Chat with an AI agent to explore ideas and refine requirements
 2. **Refine** - Agent analyzes requirements with adversarial review until the spec is solid
@@ -19,7 +19,7 @@ Each phase uses specialized Claude Code agents. Review loops catch issues early.
 
 ## Desktop App (Recommended)
 
-The desktop app is the preferred way to use Potato Cannon. It bundles the daemon and UI into a native application with menu bar integration.
+The desktop app is the preferred way to use Fleet Command. It bundles the daemon and UI into a native application with menu bar integration.
 
 ### Download
 
@@ -27,9 +27,9 @@ Download the latest release for your platform from the (coming soon):
 
 | Platform | Download                                         |
 | -------- | ------------------------------------------------ |
-| macOS    | `Potato Cannon.dmg` or `Potato Cannon.zip`       |
-| Windows  | `Potato Cannon Setup.exe` or `Potato Cannon.zip` |
-| Linux    | `Potato Cannon.AppImage` or `Potato Cannon.deb`  |
+| macOS    | `Fleet Command.dmg` or `Fleet Command.zip`       |
+| Windows  | `Fleet Command Setup.exe` or `Fleet Command.zip` |
+| Linux    | `Fleet Command.AppImage` or `Fleet Command.deb`  |
 
 ### Build from Source
 
@@ -37,23 +37,23 @@ Download the latest release for your platform from the (coming soon):
 # Prerequisites: Node.js >= 18, pnpm >= 8, Claude Code CLI
 
 # Clone and install
-git clone https://github.com/crathgeb/potato-cannon.git
-cd potato-cannon
+git clone https://github.com/crathgeb/fleet-command.git
+cd fleet-command
 pnpm install
 
 # Build everything (daemon, frontend, and desktop app)
 pnpm build
 
 # Find the built app in apps/desktop/release/
-# macOS: Potato Cannon.app, .dmg, .zip
+# macOS: Fleet Command.app, .dmg, .zip
 # Windows: .exe installer, .zip
 # Linux: .AppImage, .deb
 ```
 
 ### Getting Started
 
-1. Launch Potato Cannon from your Applications folder
-2. The app initializes `~/.potato-cannon/` on first run
+1. Launch Fleet Command from your Applications folder
+2. The app initializes `~/.fleet-command/` on first run
 3. Register your project via the dashboard (click "+" or use File → Register Project)
 4. Select your project from the sidebar
 5. Click "New Brainstorm" to start exploring an idea
@@ -62,7 +62,7 @@ pnpm build
 
 ## CLI Installation (Alternative)
 
-If you prefer running Potato Cannon as a background service without the desktop app:
+If you prefer running Fleet Command as a background service without the desktop app:
 
 ### Prerequisites
 
@@ -75,8 +75,8 @@ If you prefer running Potato Cannon as a background service without the desktop 
 
 ```bash
 # Clone and install
-git clone https://github.com/crathgeb/potato-cannon.git
-cd potato-cannon
+git clone https://github.com/crathgeb/fleet-command.git
+cd fleet-command
 pnpm install
 
 # Build
@@ -86,9 +86,9 @@ pnpm build
 ### Running
 
 ```bash
-# Start the daemon (creates ~/.potato-cannon/ on first run)
+# Start the daemon (creates ~/.fleet-command/ on first run)
 # Web UI available at http://localhost:5173
-potato-cannon start
+fleet-command start
 
 # Or run in development mode with hot reload
 pnpm dev
@@ -144,16 +144,16 @@ Example: A Build phase might have a `taskLoop` containing a `ralphLoop` with bui
 ## CLI Commands
 
 ```bash
-potato-cannon start             # Start daemon (default port 5173)
-potato-cannon start --port 9000 # Start on custom port
-potato-cannon start --daemon    # Run in background
-potato-cannon status            # Check if daemon is running
-potato-cannon stop              # Stop daemon
+fleet-command start             # Start daemon (default port 5173)
+fleet-command start --port 9000 # Start on custom port
+fleet-command start --daemon    # Run in background
+fleet-command status            # Check if daemon is running
+fleet-command stop              # Stop daemon
 ```
 
 ## Configuration
 
-Configuration is stored at `~/.potato-cannon/config.json`:
+Configuration is stored at `~/.fleet-command/config.json`:
 
 ```json
 {
@@ -172,7 +172,7 @@ Configuration is stored at `~/.potato-cannon/config.json`:
 
 1. Create a bot via [@BotFather](https://t.me/botfather)
 2. Get your user ID from [@userinfobot](https://t.me/userinfobot)
-3. Add credentials to `~/.potato-cannon/config.json`
+3. Add credentials to `~/.fleet-command/config.json`
 
 ## Development
 
@@ -226,8 +226,8 @@ Customize agent behavior per-project without modifying templates:
 
 ```bash
 # Create override file
-cp ~/.potato-cannon/templates/product-development/agents/builder.md \
-   ~/.potato-cannon/project-data/{projectId}/template/agents/builder.override.md
+cp ~/.fleet-command/templates/product-development/agents/builder.md \
+   ~/.fleet-command/project-data/{projectId}/template/agents/builder.override.md
 
 # Edit the override with project-specific instructions
 ```
@@ -240,7 +240,7 @@ cp ~/.potato-cannon/templates/product-development/agents/builder.md \
 
 ## License
 
-Potato Cannon is [fair-code](https://faircode.io) distributed under the [Sustainable Use License](LICENSE.md) and the [Potato Cannon Enterprise License](LICENSE_EE.md).
+Fleet Command is [fair-code](https://faircode.io) distributed under the [Sustainable Use License](LICENSE.md) and the [Fleet Command Enterprise License](LICENSE_EE.md).
 
 - **Sustainable Use License**: Free for internal business use, personal use, and non-commercial distribution
 - **Enterprise License**: Required for enterprise features (files in `apps/*/enterprise/` directories)

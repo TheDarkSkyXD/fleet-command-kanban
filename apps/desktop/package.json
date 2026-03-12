@@ -1,8 +1,8 @@
 {
-  "name": "@potato-cannon/desktop",
+  "name": "@fleet-command/desktop",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://github.com/crathgeb/potato-cannon",
+  "homepage": "https://github.com/crathgeb/fleet-command",
   "author": {
     "name": "Chris Rathgeb",
     "email": "chrisrathgeb@gmail.com"
@@ -19,7 +19,7 @@
     "clean": "rm -rf out release build/daemon"
   },
   "dependencies": {
-    "@potato-cannon/daemon": "workspace:*",
+    "@fleet-command/daemon": "workspace:*",
     "better-sqlite3": "^12.6.2",
     "node-pty": "^1.1.0"
   },

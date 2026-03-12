@@ -18,7 +18,7 @@ describe("FolderStore", () => {
 
   before(() => {
     // Create a temp database for integration tests
-    testDbPath = path.join(os.tmpdir(), `potato-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

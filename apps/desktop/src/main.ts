@@ -2,10 +2,10 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
-import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@potato-cannon/shared'
+import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@fleet-command/shared'
 
 // Set app name for dock/taskbar (must be before app is ready)
-app.setName('Potato Cannon')
+app.setName('Fleet Command')
 
 let daemonProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
@@ -64,7 +64,7 @@ async function startDaemon(): Promise<void> {
   // with symlinks. On Mac/Windows, we can symlink directly inside the bundle.
   let daemonDir: string
   if (!isDev && process.platform === 'linux') {
-    const tempDaemonDir = path.join(app.getPath('temp'), 'potato-cannon-daemon')
+    const tempDaemonDir = path.join(app.getPath('temp'), 'fleet-command-daemon')
     if (fs.existsSync(tempDaemonDir)) {
       fs.rmSync(tempDaemonDir, { recursive: true })
     }
@@ -101,7 +101,7 @@ async function startDaemon(): Promise<void> {
     daemonDir = bundledDaemonDir
   }
 
-  const daemonPath = path.join(daemonDir, 'bin', 'potato-cannon.js')
+  const daemonPath = path.join(daemonDir, 'bin', 'fleet-command.js')
   const nodeEnv = isDev ? 'development' : 'production'
 
   // In production, use Electron's Node.js to ensure native module compatibility
@@ -114,7 +114,7 @@ async function startDaemon(): Promise<void> {
   // On Linux, pass the frontend path explicitly since the daemon runs from a
   // temp dir where relative paths back to the AppImage won't resolve.
   if (!isDev && process.platform === 'linux') {
-    env.POTATO_FRONTEND_DIST = path.join(process.resourcesPath, 'frontend')
+    env.FLEET_FRONTEND_DIST = path.join(process.resourcesPath, 'frontend')
   }
 
   console.log(`[electron] Starting daemon: ${nodePath} ${daemonPath} start`)
@@ -245,7 +245,7 @@ app.on('will-quit', () => {
   try {
     const pidFile = path.join(
       process.env.USERPROFILE || process.env.HOME || '',
-      '.potato-cannon',
+      '.fleet-command',
       'daemon.pid'
     )
     if (fs.existsSync(pidFile)) {

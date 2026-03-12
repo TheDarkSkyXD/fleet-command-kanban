@@ -386,7 +386,7 @@ function migrateV5(db: Database.Database): void {
  * V6: Add branch_prefix column to projects table
  */
 function migrateV6(db: Database.Database): void {
-  db.exec(`ALTER TABLE projects ADD COLUMN branch_prefix TEXT DEFAULT 'potato'`);
+  db.exec(`ALTER TABLE projects ADD COLUMN branch_prefix TEXT DEFAULT 'fleet'`);
 }
 
 /**

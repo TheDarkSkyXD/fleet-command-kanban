@@ -3,7 +3,7 @@ import { Square, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { Session, SessionStatus } from '@potato-cannon/shared'
+import type { Session, SessionStatus } from '@fleet-command/shared'
 
 interface SessionCardProps {
   session: Session

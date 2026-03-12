@@ -16,7 +16,7 @@ describe("BrainstormStore", () => {
   let projectId: string;
 
   before(() => {
-    testDbPath = path.join(os.tmpdir(), `potato-brainstorm-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-brainstorm-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

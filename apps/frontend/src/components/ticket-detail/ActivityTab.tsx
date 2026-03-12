@@ -10,7 +10,7 @@ import { Linkify } from '@/components/ui/linkify'
 import { ArtifactViewerFull } from './ArtifactViewerFull'
 import { TaskList } from './TaskList'
 import { RestartPhaseButton } from './RestartPhaseButton'
-import type { Artifact, TicketHistoryEntry } from '@potato-cannon/shared'
+import type { Artifact, TicketHistoryEntry } from '@fleet-command/shared'
 import { useSessionOutput, useTicketMessage, useSessionEnded } from '@/hooks/useSSE'
 
 interface ActivityTabProps {

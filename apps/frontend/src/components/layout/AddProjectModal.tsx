@@ -142,7 +142,7 @@ export function AddProjectModal() {
           <DialogHeader>
             <DialogTitle className="text-text-primary">Add Project</DialogTitle>
             <DialogDescription className="text-text-secondary">
-              Add an existing project directory to Potato Cannon.
+              Add an existing project directory to Fleet Command.
             </DialogDescription>
           </DialogHeader>
 

@@ -55,7 +55,7 @@ describe("ProjectStore", () => {
 
   before(() => {
     // Create a temp database for integration tests
-    testDbPath = path.join(os.tmpdir(), `potato-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);
@@ -322,8 +322,8 @@ describe("ProjectStore", () => {
         path: "/path",
       });
 
-      // Default should be 'potato'
-      assert.strictEqual(created.branchPrefix, "potato");
+      // Default should be 'fleet'
+      assert.strictEqual(created.branchPrefix, "fleet");
 
       // Update to custom prefix
       const updated = store.updateProject(created.id, {
@@ -346,16 +346,16 @@ describe("ProjectStore", () => {
       // Set to custom
       store.updateProject(created.id, { branchPrefix: "custom" });
 
-      // Clear to null (should default to 'potato' when read)
+      // Clear to null (should default to 'fleet' when read)
       const updated = store.updateProject(created.id, {
         branchPrefix: null as any,
       });
 
-      assert.strictEqual(updated?.branchPrefix, "potato");
+      assert.strictEqual(updated?.branchPrefix, "fleet");
 
       // Verify persistence
       const project = store.getProjectById(created.id);
-      assert.strictEqual(project?.branchPrefix, "potato");
+      assert.strictEqual(project?.branchPrefix, "fleet");
     });
   });
 

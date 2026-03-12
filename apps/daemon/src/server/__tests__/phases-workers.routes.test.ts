@@ -6,14 +6,14 @@ import os from "os";
 
 describe("GET /api/projects/:id/phases/:phase/workers endpoint", () => {
   const homeDir = os.homedir();
-  const potatoDir = path.join(homeDir, ".potato-cannon");
+  const fleetDir = path.join(homeDir, ".fleet-command");
   const projectId = "test-phases-workers-" + Date.now();
   let testProjectDir: string;
   let testTemplatePath: string;
 
   before(async () => {
     // Create project template directory structure with phases and workers
-    testProjectDir = path.join(potatoDir, "project-data", projectId, "template");
+    testProjectDir = path.join(fleetDir, "project-data", projectId, "template");
     await fs.mkdir(testProjectDir, { recursive: true });
 
     // Create agents directory
@@ -106,7 +106,7 @@ describe("GET /api/projects/:id/phases/:phase/workers endpoint", () => {
   });
 
   after(async () => {
-    const projectDataDir = path.join(potatoDir, "project-data", projectId);
+    const projectDataDir = path.join(fleetDir, "project-data", projectId);
     await fs.rm(projectDataDir, { recursive: true, force: true }).catch(() => {});
   });
 

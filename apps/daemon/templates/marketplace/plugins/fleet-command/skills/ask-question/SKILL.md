@@ -1,5 +1,5 @@
 ---
-name: potato:ask-question
+name: fleet-command:ask-question
 description: "You MUST use this anytime you want to ask the user a question or feel like something is unclear. If you think you want to use the AskUserQuestion tool, first invoke this skill, we may have a different way of asking the user a question."
 ---
 
@@ -7,7 +7,7 @@ description: "You MUST use this anytime you want to ask the user a question or f
 
 ## Overview
 
-Use the `chat_ask` MCP tool to ask the user questions. This is the preferred method over `AskUserQuestion` because it integrates with the potato-cannon chat system and provides a better user experience.
+Use the `chat_ask` MCP tool to ask the user questions. This is the preferred method over `AskUserQuestion` because it integrates with the fleet-command chat system and provides a better user experience.
 
 ## Using chat_ask
 

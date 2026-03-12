@@ -110,7 +110,7 @@ export class SlackProvider implements ChatProvider {
 
     const cacheKey = this.getContextKey(context);
 
-    const welcomeText = `*Potato Cannon*\n\nStarting work on: *${title}*\n\nI'll ask questions here as I work.`;
+    const welcomeText = `*Fleet Command*\n\nStarting work on: *${title}*\n\nI'll ask questions here as I work.`;
     const threadTs = await this.api.postMessage(
       this.channelId,
       toSlackMrkdwn(welcomeText),

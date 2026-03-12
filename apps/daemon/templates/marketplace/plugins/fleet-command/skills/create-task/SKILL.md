@@ -1,5 +1,5 @@
 ---
-name: potato:create-task
+name: fleet-command:create-task
 description: "Use this skill to create a new task for tracking work within the current ticket. Tasks help break down work into smaller trackable units."
 ---
 

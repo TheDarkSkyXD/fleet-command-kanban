@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { Brainstorm, BrainstormStatus } from "@potato-cannon/shared";
+import type { Brainstorm, BrainstormStatus } from "@fleet-command/shared";
 import { getDatabase } from "./db.js";
 import {
   createConversationStore,

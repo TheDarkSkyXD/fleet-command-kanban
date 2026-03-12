@@ -52,7 +52,7 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
   const [icon, setIcon] = useState('package')
   const [color, setColor] = useState<string | undefined>(undefined)
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
-  const [branchPrefix, setBranchPrefix] = useState('potato')
+  const [branchPrefix, setBranchPrefix] = useState('fleet')
   const [branchPrefixError, setBranchPrefixError] = useState<string | null>(null)
   const [ticketPrefix, setTicketPrefix] = useState('')
   const [ticketPrefixError, setTicketPrefixError] = useState<string | null>(null)
@@ -90,7 +90,7 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
       setIcon(project.icon || 'package')
       setColor(project.color)
       setSelectedTemplate(project.template?.name || '')
-      setBranchPrefix(project.branchPrefix || 'potato')
+      setBranchPrefix(project.branchPrefix || 'fleet')
       setBranchPrefixError(null)
       setTicketPrefix(project.ticketPrefix || '')
       setTicketPrefixError(null)
@@ -130,8 +130,8 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
   const handleBranchPrefixBlur = useCallback(() => {
     if (!project) return
     if (branchPrefixError) return // Don't save if invalid
-    const newPrefix = branchPrefix.trim() || 'potato'
-    if (newPrefix !== (project.branchPrefix || 'potato')) {
+    const newPrefix = branchPrefix.trim() || 'fleet'
+    if (newPrefix !== (project.branchPrefix || 'fleet')) {
       api.updateProject(projectId, { branchPrefix: newPrefix }).then(() => {
         queryClient.invalidateQueries({ queryKey: ['projects'] })
       })
@@ -319,14 +319,14 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
               onChange={(e) => handleBranchPrefixChange(e.target.value)}
               onBlur={handleBranchPrefixBlur}
               onKeyDown={handleBranchPrefixKeyDown}
-              placeholder="potato"
+              placeholder="fleet"
               className="max-w-md"
             />
             {branchPrefixError ? (
               <p className="text-sm text-accent-red">{branchPrefixError}</p>
             ) : (
               <p className="text-sm text-text-secondary">
-                Branches will be named: {branchPrefix || 'potato'}/{(ticketPrefix || defaultTicketPrefix).toUpperCase()}-XX
+                Branches will be named: {branchPrefix || 'fleet'}/{(ticketPrefix || defaultTicketPrefix).toUpperCase()}-XX
               </p>
             )}
           </div>
@@ -447,7 +447,7 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
             </DialogTitle>
             <DialogDescription>
               Are you sure you want to delete "{project.displayName || project.id}"?
-              This will remove the project from Potato Cannon but will not delete
+              This will remove the project from Fleet Command but will not delete
               any files from your filesystem. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

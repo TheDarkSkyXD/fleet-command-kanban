@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { DEFAULT_PORT } from "@potato-cannon/shared";
+import { DEFAULT_PORT } from "@fleet-command/shared";
 import { allTools, allHandlers } from "../../mcp/tools/index.js";
 import { appendTicketLog } from "../../stores/ticket-log.store.js";
 import type { McpContext } from "../../types/mcp.types.js";

@@ -20,7 +20,7 @@ import type {
   ArtifactChatPendingResponse,
   ArchiveResult,
   WorkerTreeResponse
-} from '@potato-cannon/shared'
+} from '@fleet-command/shared'
 
 const BASE_URL = ''
 

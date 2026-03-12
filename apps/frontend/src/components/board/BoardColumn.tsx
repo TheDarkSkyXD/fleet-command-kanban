@@ -11,7 +11,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import type { Ticket } from '@potato-cannon/shared'
+import type { Ticket } from '@fleet-command/shared'
 
 interface BoardColumnProps {
   phase: string

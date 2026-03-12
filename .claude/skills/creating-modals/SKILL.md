@@ -1,9 +1,9 @@
 ---
-name: potato:creating-modals
+name: fleet-command:creating-modals
 description: Use when creating or modifying modal dialogs in the web-react application
 ---
 
-# Creating Modals in Potato Cannon
+# Creating Modals in Fleet Command
 
 This skill documents the correct patterns for creating modal dialogs in the web-react application.
 

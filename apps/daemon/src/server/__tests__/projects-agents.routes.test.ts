@@ -6,19 +6,19 @@ import os from "os";
 
 describe("projects agent override routes", () => {
   const homeDir = os.homedir();
-  const potatoDir = path.join(homeDir, ".potato-cannon");
+  const fleetDir = path.join(homeDir, ".fleet-command");
   const projectId = "test-agent-routes-" + Date.now();
   let testProjectDir: string;
 
   before(async () => {
     // Create project template directory with a base agent
-    testProjectDir = path.join(potatoDir, "project-data", projectId, "template", "agents");
+    testProjectDir = path.join(fleetDir, "project-data", projectId, "template", "agents");
     await fs.mkdir(testProjectDir, { recursive: true });
     await fs.writeFile(path.join(testProjectDir, "refinement.md"), "# Default Refinement Agent");
   });
 
   after(async () => {
-    const projectDataDir = path.join(potatoDir, "project-data", projectId);
+    const projectDataDir = path.join(fleetDir, "project-data", projectId);
     await fs.rm(projectDataDir, { recursive: true, force: true }).catch(() => {});
   });
 

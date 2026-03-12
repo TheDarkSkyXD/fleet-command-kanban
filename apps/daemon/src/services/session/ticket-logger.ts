@@ -6,16 +6,16 @@ import { TASKS_DIR } from "../../config/paths.js";
 /**
  * Ticket-specific logging for debugging agent sessions.
  *
- * Creates logs in ~/.potato-cannon/tickets/{projectId}/{ticketId}/logs/
+ * Creates logs in ~/.fleet-command/tickets/{projectId}/{ticketId}/logs/
  * - daemon.log: Orchestration events and daemon-side logging
  * - prompts/prompt-{N}-{timestamp}.md: Full prompt context for each agent invocation
  *
- * Set POTATO_DEBUG=1 to enable logging (always enabled in development).
+ * Set FLEET_DEBUG=1 to enable logging (always enabled in development).
  */
 
 const isDebugEnabled = (): boolean => {
   return (
-    process.env.POTATO_DEBUG === "1" || process.env.NODE_ENV === "development"
+    process.env.FLEET_DEBUG === "1" || process.env.NODE_ENV === "development"
   );
 };
 

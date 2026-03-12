@@ -1,7 +1,7 @@
 import path from "path";
 import os from "os";
 
-export const GLOBAL_DIR = path.join(os.homedir(), ".potato-cannon");
+export const GLOBAL_DIR = path.join(os.homedir(), ".fleet-command");
 export const CONFIG_FILE = path.join(GLOBAL_DIR, "config.json");
 export const PROJECTS_DIR = path.join(GLOBAL_DIR, "projects");
 export const TASKS_DIR = path.join(GLOBAL_DIR, "tickets");
@@ -14,7 +14,7 @@ export const PID_FILE = path.join(GLOBAL_DIR, "daemon.pid");
 export const LOCK_FILE = path.join(GLOBAL_DIR, "daemon.lock");
 export const DAEMON_INFO_FILE = path.join(GLOBAL_DIR, "daemon.json");
 export const LOG_FILE = path.join(GLOBAL_DIR, "daemon.log");
-export const DB_FILE = path.join(GLOBAL_DIR, "potato.db");
+export const DB_FILE = path.join(GLOBAL_DIR, "fleet-command.db");
 
 /**
  * Get the data directory for a specific project.

@@ -16,7 +16,7 @@ import {
 } from "../chat.store.js";
 
 // Override BRAINSTORMS_DIR for testing
-const TEST_DIR = path.join(os.tmpdir(), `potato-chat-test-${Date.now()}`);
+const TEST_DIR = path.join(os.tmpdir(), `fc-chat-test-${Date.now()}`);
 
 describe("chat.store cancellation", () => {
   const projectId = "test-project";
@@ -39,7 +39,7 @@ describe("chat.store cancellation", () => {
   beforeEach(async () => {
     // Clean up any existing test files for this context
     const safeProject = projectId.replace(/\//g, "__");
-    const brainstormsDir = path.join(os.homedir(), ".potato-cannon", "brainstorms");
+    const brainstormsDir = path.join(os.homedir(), ".fleet-command", "brainstorms");
     const basePath = path.join(brainstormsDir, safeProject, contextId);
     try {
       await fs.rm(basePath, { recursive: true, force: true });

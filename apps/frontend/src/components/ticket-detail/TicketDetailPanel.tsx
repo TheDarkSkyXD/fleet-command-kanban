@@ -32,7 +32,7 @@ import { timeAgo } from '@/lib/utils'
 import { DetailsTab } from './DetailsTab'
 import { SettingsTab } from './SettingsTab'
 import { ActivityTab } from './ActivityTab'
-import type { TemplatePhase } from '@potato-cannon/shared'
+import type { TemplatePhase } from '@fleet-command/shared'
 
 /**
  * Checks if a phase has automation configured (workers array with items)

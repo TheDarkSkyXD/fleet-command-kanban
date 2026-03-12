@@ -1,4 +1,4 @@
-import type { TemplatePhase } from '@potato-cannon/shared'
+import type { TemplatePhase } from '@fleet-command/shared'
 
 export type AutomationType = 'manual' | 'agents' | 'ralph-loop' | 'ticket-loop'
 

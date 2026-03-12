@@ -18,7 +18,7 @@ digraph pr {
 
 ## Step 1: Read Artifacts
 
-**Before writing any PR content**, invoke `potato:read-artifacts` to read:
+**Before writing any PR content**, invoke `fleet-command:read-artifacts` to read:
 
 - `refinement.md` - What was built and why
 - `architecture.md` - How it was designed
@@ -54,7 +54,7 @@ gh pr create \
 - [Specification](link)
 
 ---
-🥔 Baked with Potato Cannon[https://github.com/crathgeb/potato-cannon]
+🥔 Baked with Fleet Command[https://github.com/crathgeb/fleet-command]
 EOF
 )"
 ```
@@ -70,7 +70,7 @@ EOF
 
 ## Step 3: Notify
 
-Use `potato:notify-user` to inform the user:
+Use `fleet-command:notify-user` to inform the user:
 
 ```
 PR ready for #{ticketId}: {prUrl}
@@ -92,7 +92,7 @@ These thoughts mean you're about to create a bad PR:
 
 Before calling `gh pr create`, verify:
 
-- [ ] Read all three artifacts via `potato:read-artifacts`
+- [ ] Read all three artifacts via `fleet-command:read-artifacts`
 - [ ] Summary describes the "why", not just the "what"
 - [ ] Changes list is from actual diff, not assumed
 - [ ] Test results are from actual test run

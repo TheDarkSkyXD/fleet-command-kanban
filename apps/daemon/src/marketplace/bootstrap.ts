@@ -9,9 +9,9 @@ import { findClaudeBinary, getClaudeSpawnEnv } from '../utils/claude-path.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const MARKETPLACE_NAME = 'potato-cannon-marketplace';
-const PLUGIN_NAME = 'potato';
-const MARKETPLACE_DIR = path.join(os.homedir(), '.potato-cannon', 'marketplace');
+const MARKETPLACE_NAME = 'fleet-command-marketplace';
+const PLUGIN_NAME = 'fleet-command';
+const MARKETPLACE_DIR = path.join(os.homedir(), '.fleet-command', 'marketplace');
 const CLAUDE_CACHE_DIR = path.join(os.homedir(), '.claude', 'plugins', 'cache', MARKETPLACE_NAME);
 
 interface CommandResult {
@@ -70,17 +70,17 @@ async function copyDirectoryRecursive(src: string, dest: string): Promise<void> 
 }
 
 /**
- * Bootstrap the potato-cannon marketplace on daemon startup.
+ * Bootstrap the fleet-command marketplace on daemon startup.
  * This ensures the latest marketplace is always installed:
- * 1. Delete old ~/.potato-cannon/marketplace folder
- * 2. Copy templates/marketplace/ to ~/.potato-cannon/marketplace
+ * 1. Delete old ~/.fleet-command/marketplace folder
+ * 2. Copy templates/marketplace/ to ~/.fleet-command/marketplace
  * 3. Uninstall old marketplace from Claude (including cache)
  * 4. Install marketplace and plugin from local path
  */
 export async function bootstrapMarketplace(): Promise<void> {
   console.log('[marketplace] Bootstrapping marketplace...');
 
-  // Step 1: Always copy marketplace to ~/.potato-cannon/marketplace (doesn't require Claude CLI)
+  // Step 1: Always copy marketplace to ~/.fleet-command/marketplace (doesn't require Claude CLI)
   if (existsSync(MARKETPLACE_DIR)) {
     console.log('[marketplace] Removing old marketplace directory...');
     rmSync(MARKETPLACE_DIR, { recursive: true, force: true });
@@ -147,7 +147,7 @@ export async function bootstrapMarketplace(): Promise<void> {
   }
 
   try {
-    console.log('[marketplace] Installing potato plugin...');
+    console.log('[marketplace] Installing fleet-command plugin...');
     await runClaudeCommand(claudePath, ['plugin', 'install', pluginId]);
     console.log('[marketplace] Plugin installed');
   } catch (err) {

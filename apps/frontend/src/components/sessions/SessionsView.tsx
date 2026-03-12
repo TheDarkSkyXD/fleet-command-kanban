@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useSessions, useStopSession } from '@/hooks/queries'
 import { SessionCard } from './SessionCard'
 import { SessionLogModal } from './SessionLogModal'
-import type { Session } from '@potato-cannon/shared'
+import type { Session } from '@fleet-command/shared'
 
 export function SessionsView() {
   const { data: sessions, isLoading } = useSessions()

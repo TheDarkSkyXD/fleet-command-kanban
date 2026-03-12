@@ -19,7 +19,7 @@ describe("TaskStore", () => {
   let ticketId: string;
 
   before(() => {
-    testDbPath = path.join(os.tmpdir(), `potato-task-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-task-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

@@ -1,6 +1,6 @@
 # Workflow Schema
 
-This directory contains the JSON schema for defining Potato Cannon workflows and template implementations.
+This directory contains the JSON schema for defining Fleet Command workflows and template implementations.
 
 ## Files
 
@@ -313,7 +313,7 @@ Projects can customize agent behavior without modifying base template files. Thi
 Create a file with `.override.md` suffix alongside the standard agent file:
 
 ```
-~/.potato-cannon/project-data/{projectId}/template/agents/
+~/.fleet-command/project-data/{projectId}/template/agents/
 ├── refinement.md           # Standard agent (from template)
 ├── refinement.override.md  # Project override (takes priority)
 ├── builder.md
@@ -336,7 +336,7 @@ The first file found is used. Override content **completely replaces** the stand
 
 1. Locate your project's template directory:
    ```
-   ~/.potato-cannon/project-data/{projectId}/template/agents/
+   ~/.fleet-command/project-data/{projectId}/template/agents/
    ```
 
 2. Copy the agent you want to customize:
@@ -407,7 +407,7 @@ See `src/stores/project-template.store.ts` and `src/stores/template.store.ts` fo
 ## Worktree Behavior
 
 When `requiresWorktree: true`:
-- Creates isolated git worktree at `.potato/worktrees/{ticketId}/`
+- Creates isolated git worktree at `.fleet-command/worktrees/{ticketId}/`
 - Code changes happen in isolation from main branch
 - Enables parallel ticket execution without conflicts
 

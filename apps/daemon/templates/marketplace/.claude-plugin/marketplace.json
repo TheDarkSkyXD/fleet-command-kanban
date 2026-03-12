@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "potato-cannon-marketplace",
+  "name": "fleet-command-marketplace",
   "version": "1.0.0",
   "description": "Multi-agent development pipeline plugins for Claude Code",
   "owner": {
@@ -9,10 +9,10 @@
   },
   "plugins": [
     {
-      "name": "potato",
+      "name": "fleet-command",
       "description": "Multi-agent software engineering pipeline with orchestrator, discovery, planner, engineer, and QA agents",
       "version": "1.0.0",
-      "source": "./plugins/potato",
+      "source": "./plugins/fleet-command",
       "category": "development"
     }
   ]

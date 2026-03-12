@@ -1,5 +1,5 @@
 ---
-name: potato:notify-user
+name: fleet-command:notify-user
 description: "Use this to send status updates, progress notifications, or informational messages to the user without waiting for a response."
 ---
 

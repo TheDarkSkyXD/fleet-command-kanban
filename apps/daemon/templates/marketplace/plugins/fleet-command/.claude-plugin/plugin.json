@@ -1,5 +1,5 @@
 {
-  "name": "potato",
+  "name": "fleet-command",
   "description": "Multi-agent kanban style pipeline",
   "version": "1.0.0"
 }

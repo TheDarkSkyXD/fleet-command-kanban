@@ -1,6 +1,6 @@
 # Utils
 
-Shared utilities for the Potato Cannon daemon.
+Shared utilities for the Fleet Command daemon.
 
 ## Files
 
@@ -84,7 +84,7 @@ console.log("This goes to stdout AND the log file");
 
 - **Max file size:** 10MB before rotation
 - **Max files:** 3 (current + 2 archived)
-- **Default path:** `~/.potato-cannon/daemon.log`
+- **Default path:** `~/.fleet-command/daemon.log`
 
 ### Rotation
 

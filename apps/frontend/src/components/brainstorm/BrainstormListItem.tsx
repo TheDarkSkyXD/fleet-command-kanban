@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { ListItemCard } from '@/components/ui/list-item-card'
 import { cn, timeAgo } from '@/lib/utils'
 import { useBrainstormMessage } from '@/hooks/useSSE'
-import type { Brainstorm } from '@potato-cannon/shared'
+import type { Brainstorm } from '@fleet-command/shared'
 
 interface BrainstormListItemProps {
   brainstorm: Brainstorm

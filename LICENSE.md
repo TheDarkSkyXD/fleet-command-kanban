@@ -1,16 +1,16 @@
-# Potato Cannon Licensing
+# Fleet Command Licensing
 
-Potato Cannon is [fair-code](https://faircode.io) distributed under the [**Sustainable Use License**](https://github.com/potato-cannon/potato-cannon/blob/main/LICENSE.md) and the [**Potato Cannon Enterprise License**](https://github.com/potato-cannon/potato-cannon/blob/main/LICENSE_EE.md).
+Fleet Command is [fair-code](https://faircode.io) distributed under the [**Sustainable Use License**](https://github.com/fleet-command/fleet-command/blob/main/LICENSE.md) and the [**Fleet Command Enterprise License**](https://github.com/fleet-command/fleet-command/blob/main/LICENSE_EE.md).
 
 Proprietary licenses are available for enterprise use. Contact <chrisrathgeb@gmail.com> for more information.
 
-Additional information about the license model can be found in the [docs](https://docs.potato-cannon.io/reference/license/).
+Additional information about the license model can be found in the [docs](https://docs.fleet-command.io/reference/license/).
 
 ## Summary
 
 - All content that resides under the `apps/*/enterprise/` directories of this repository is licensed under the license defined in [LICENSE_EE.md](LICENSE_EE.md).
 - Content outside of the above mentioned directories or restrictions above is available under the "Sustainable Use License" as defined below.
-- Third party components incorporated into the Potato Cannon Software are licensed under the original license provided by the owner of the applicable component.
+- Third party components incorporated into the Fleet Command Software are licensed under the original license provided by the owner of the applicable component.
 
 ---
 

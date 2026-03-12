@@ -20,7 +20,7 @@ describe("TicketStore", () => {
 
   before(() => {
     // Create a temp database for integration tests
-    testDbPath = path.join(os.tmpdir(), `potato-ticket-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-ticket-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

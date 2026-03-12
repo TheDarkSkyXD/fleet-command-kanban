@@ -12,7 +12,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { timeAgo } from '@/lib/utils'
-import type { Session, SessionLogEntry } from '@potato-cannon/shared'
+import type { Session, SessionLogEntry } from '@fleet-command/shared'
 
 interface SessionsTabProps {
   ticketId: string

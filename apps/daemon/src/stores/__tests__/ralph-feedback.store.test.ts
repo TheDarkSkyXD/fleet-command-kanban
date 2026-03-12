@@ -27,7 +27,7 @@ describe("RalphFeedbackStore", () => {
   before(() => {
     testDbPath = path.join(
       os.tmpdir(),
-      `potato-ralph-test-${Date.now()}.db`
+      `fc-ralph-test-${Date.now()}.db`
     );
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");

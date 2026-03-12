@@ -1,4 +1,4 @@
-// bin/potato-cannon.test.js
+// bin/fleet-command.test.js
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import { execSync } from 'child_process';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const cliPath = join(__dirname, 'potato-cannon.js');
+const cliPath = join(__dirname, 'fleet-command.js');
 
 describe('CLI', () => {
   it('shows help with --help', () => {

@@ -298,7 +298,7 @@ export const useAppStore = create<AppState>()(
       setShowArchivedTickets: (show) => set({ showArchivedTickets: show })
     }),
     {
-      name: 'potato-cannon-app',
+      name: 'fleet-command-app',
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
         boardViewMode: state.boardViewMode,

@@ -1,6 +1,6 @@
-# Potato Cannon Web UI
+# Fleet Command Web UI
 
-React-based web interface for the Potato Cannon ticket management system.
+React-based web interface for the Fleet Command ticket management system.
 
 ## Tech Stack
 
@@ -112,7 +112,7 @@ import { useProjects } from '@/hooks/queries'
 
 ## API Integration
 
-The dev server proxies `/api/*` and `/events/*` to the Potato Cannon daemon running on `localhost:3131`.
+The dev server proxies `/api/*` and `/events/*` to the Fleet Command daemon running on `localhost:3131`.
 
 - REST API: `/api/*`
 - Server-Sent Events: `/events/*`

@@ -4,13 +4,13 @@ import { program } from 'commander';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
-import { DEFAULT_PORT } from '@potato-cannon/shared';
+import { DEFAULT_PORT } from '@fleet-command/shared';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 
 program
-  .name('potato-cannon')
+  .name('fleet-command')
   .description('Multi-agent software engineering daemon')
   .version(pkg.version);
 

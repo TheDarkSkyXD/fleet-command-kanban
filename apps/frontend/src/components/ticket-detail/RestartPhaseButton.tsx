@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
 import { RestartPhaseModal } from './RestartPhaseModal'
-import type { TicketHistoryEntry } from '@potato-cannon/shared'
+import type { TicketHistoryEntry } from '@fleet-command/shared'
 
 interface RestartPhaseButtonProps {
   projectId: string

@@ -3,14 +3,14 @@ export {
   DEFAULT_PHASES,
   DEFAULT_TRIGGER_PHASES,
   TERMINAL_PHASES,
-} from '@potato-cannon/shared';
+} from '@fleet-command/shared';
 
 export type {
   Ticket,
   ArchiveResult,
   HistorySessionRecord,
   TicketHistoryEntry,
-} from '@potato-cannon/shared';
+} from '@fleet-command/shared';
 
 /**
  * TicketPhase is a string to support dynamic phases from templates.

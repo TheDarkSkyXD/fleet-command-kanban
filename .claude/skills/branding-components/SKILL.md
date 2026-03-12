@@ -1,9 +1,9 @@
 ---
-name: potato:branding-components
+name: fleet-command:branding-components
 description: Use when creating or styling UI components in the web-react application
 ---
 
-# Potato Cannon UI Components & Branding
+# Fleet Command UI Components & Branding
 
 This skill documents the UI components, theme variables, and styling conventions for the web-react application. Use this as a reference when creating or modifying UI elements.
 
@@ -130,7 +130,7 @@ import { Button } from "@/components/ui/button"
 ## Modal/Dialog Component
 Location: `web-react/src/components/ui/dialog.tsx`
 
-See the `potato:creating-modals` skill for detailed modal patterns.
+See the `fleet-command:creating-modals` skill for detailed modal patterns.
 
 Basic structure:
 ```tsx

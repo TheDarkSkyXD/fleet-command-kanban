@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import type { LogEntry, LogLevel } from '@potato-cannon/shared'
+import type { LogEntry, LogLevel } from '@fleet-command/shared'
 
 const MAX_ENTRIES = 500
 

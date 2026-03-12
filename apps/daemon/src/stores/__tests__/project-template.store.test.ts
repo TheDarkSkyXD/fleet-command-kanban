@@ -8,17 +8,17 @@ describe("project-template.store", () => {
   describe("hasProjectAgentOverride", () => {
     let testProjectDir: string;
     const homeDir = os.homedir();
-    const potatoDir = path.join(homeDir, ".potato-cannon");
+    const fleetDir = path.join(homeDir, ".fleet-command");
     const projectId = "test-override-check-" + Date.now();
 
     before(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId, "template", "agents");
+      const projectDataDir = path.join(fleetDir, "project-data", projectId, "template", "agents");
       testProjectDir = projectDataDir;
       await fs.mkdir(projectDataDir, { recursive: true });
     });
 
     after(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId);
+      const projectDataDir = path.join(fleetDir, "project-data", projectId);
       await fs.rm(projectDataDir, { recursive: true, force: true }).catch(() => {});
     });
 
@@ -48,17 +48,17 @@ describe("project-template.store", () => {
   describe("getProjectAgentOverride", () => {
     let testProjectDir: string;
     const homeDir = os.homedir();
-    const potatoDir = path.join(homeDir, ".potato-cannon");
+    const fleetDir = path.join(homeDir, ".fleet-command");
     const projectId = "test-override-read-" + Date.now();
 
     before(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId, "template", "agents");
+      const projectDataDir = path.join(fleetDir, "project-data", projectId, "template", "agents");
       testProjectDir = projectDataDir;
       await fs.mkdir(projectDataDir, { recursive: true });
     });
 
     after(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId);
+      const projectDataDir = path.join(fleetDir, "project-data", projectId);
       await fs.rm(projectDataDir, { recursive: true, force: true }).catch(() => {});
     });
 
@@ -87,11 +87,11 @@ describe("project-template.store", () => {
 
   describe("saveProjectAgentOverride", () => {
     const homeDir = os.homedir();
-    const potatoDir = path.join(homeDir, ".potato-cannon");
+    const fleetDir = path.join(homeDir, ".fleet-command");
     const projectId = "test-save-override-" + Date.now();
 
     after(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId);
+      const projectDataDir = path.join(fleetDir, "project-data", projectId);
       await fs.rm(projectDataDir, { recursive: true, force: true }).catch(() => {});
     });
 
@@ -117,16 +117,16 @@ describe("project-template.store", () => {
 
   describe("deleteProjectAgentOverride", () => {
     const homeDir = os.homedir();
-    const potatoDir = path.join(homeDir, ".potato-cannon");
+    const fleetDir = path.join(homeDir, ".fleet-command");
     const projectId = "test-delete-override-" + Date.now();
 
     before(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId, "template", "agents");
+      const projectDataDir = path.join(fleetDir, "project-data", projectId, "template", "agents");
       await fs.mkdir(projectDataDir, { recursive: true });
     });
 
     after(async () => {
-      const projectDataDir = path.join(potatoDir, "project-data", projectId);
+      const projectDataDir = path.join(fleetDir, "project-data", projectId);
       await fs.rm(projectDataDir, { recursive: true, force: true }).catch(() => {});
     });
 

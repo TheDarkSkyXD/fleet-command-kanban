@@ -4,7 +4,7 @@ import { api } from '@/api/client'
 export const Route = createFileRoute('/')({
   loader: async () => {
     // First, check localStorage for last viewed project
-    const stored = localStorage.getItem('potato-cannon-app')
+    const stored = localStorage.getItem('fleet-command-app')
     if (stored) {
       try {
         const { state } = JSON.parse(stored)

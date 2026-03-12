@@ -19,7 +19,7 @@ import {
 import { ArtifactChat } from './ArtifactChat'
 import { ArtifactEditor } from './ArtifactEditor'
 import { useUpdateArtifact } from '@/hooks/queries'
-import type { Artifact } from '@potato-cannon/shared'
+import type { Artifact } from '@fleet-command/shared'
 
 interface ArtifactViewerFullProps {
   projectId: string

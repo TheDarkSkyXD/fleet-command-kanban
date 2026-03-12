@@ -7,7 +7,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar'
-import type { Project } from '@potato-cannon/shared'
+import type { Project } from '@fleet-command/shared'
 
 interface ProjectMenuItemProps {
   project: Project

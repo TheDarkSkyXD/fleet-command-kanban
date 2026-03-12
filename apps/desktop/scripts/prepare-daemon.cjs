@@ -20,7 +20,7 @@ if (fs.existsSync(buildDir)) {
 // pnpm deploy creates a standalone package with all dependencies
 // Must be run from workspace root with --filter
 // --prod excludes devDependencies
-execSync(`pnpm --filter @potato-cannon/daemon deploy --prod "${buildDir}"`, {
+execSync(`pnpm --filter @fleet-command/daemon deploy --prod "${buildDir}"`, {
   cwd: workspaceRoot,
   stdio: 'inherit'
 });

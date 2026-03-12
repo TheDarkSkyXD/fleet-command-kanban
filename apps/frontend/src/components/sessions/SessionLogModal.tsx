@@ -7,7 +7,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { SessionLogEntry } from '@potato-cannon/shared'
+import type { SessionLogEntry } from '@fleet-command/shared'
 
 interface SessionLogModalProps {
   sessionId: string | null

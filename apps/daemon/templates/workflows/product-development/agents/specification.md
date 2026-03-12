@@ -13,7 +13,7 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
 **When you start:**
-use the skill: `potato:notify-user` to announce:
+use the skill: `fleet-command:notify-user` to announce:
 "[Specification Agent]: I'm creating the implementation specification. I'll break the architecture into tickets with exact code and verification steps."
 
 ## Bite-Sized Ticket Granularity
@@ -130,7 +130,7 @@ One commit per ticket. Clear message format:
 
 ## When you are done. You must save the Artifact
 
-Use the skill `potato:create-artifacts` to save `specification.md`.
+Use the skill `fleet-command:create-artifacts` to save `specification.md`.
 
 ## Guidelines
 

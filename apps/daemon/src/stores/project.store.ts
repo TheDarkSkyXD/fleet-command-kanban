@@ -61,7 +61,7 @@ function rowToProject(row: Record<string, unknown>): Project {
     swimlaneColors: row.swimlane_colors
       ? JSON.parse(row.swimlane_colors as string)
       : undefined,
-    branchPrefix: (row.branch_prefix as string) || 'potato',
+    branchPrefix: (row.branch_prefix as string) || 'fleet',
     ticketPrefix: (row.ticket_prefix as string) || undefined,
     agentName: (row.agent_name as string) || undefined,
     folderId: (row.folder_id as string) || null,

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { api } from '@/api/client'
-import type { TemplateAgent } from '@potato-cannon/shared'
+import type { TemplateAgent } from '@fleet-command/shared'
 
 interface AgentCardProps {
   agent: TemplateAgent

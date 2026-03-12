@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://potato-cannon/schemas/workflow.schema.json",
-  "title": "Potato Cannon Workflow",
+  "$id": "https://fleet-command/schemas/workflow.schema.json",
+  "title": "Fleet Command Workflow",
   "description": "Schema for defining product development workflows with phases and workers",
   "type": "object",
   "required": ["name", "description", "version", "phases"],

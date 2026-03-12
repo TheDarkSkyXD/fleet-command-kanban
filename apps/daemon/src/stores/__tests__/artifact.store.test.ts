@@ -19,7 +19,7 @@ describe("ArtifactStore", () => {
   let ticketId: string;
 
   before(() => {
-    testDbPath = path.join(os.tmpdir(), `potato-artifact-test-${Date.now()}.db`);
+    testDbPath = path.join(os.tmpdir(), `fc-artifact-test-${Date.now()}.db`);
     db = new Database(testDbPath);
     db.pragma("journal_mode = WAL");
     runMigrations(db);

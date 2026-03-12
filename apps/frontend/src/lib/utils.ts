@@ -37,17 +37,17 @@ export function parseTicketNumber(id: string): number {
  * Used to show human-readable status while Claude is working.
  */
 export function formatToolActivity(toolName: string, input?: Record<string, unknown>): string {
-  // Skills - potato cannon specific
+  // Skills - fleet command specific
   const skillPhrases: Record<string, string> = {
-    'potato:read-artifacts': 'Reading project documents',
-    'potato:create-artifacts': 'Writing documentation',
-    'potato:add-comment-to-task': 'Adding notes to task',
-    'potato:notify-user': 'Preparing update',
-    'potato:ask-question': 'Formulating question',
-    'potato:update-ralph-loop': 'Updating review status',
-    'potato:create-task': 'Creating new task',
-    'potato:get-task': 'Checking task details',
-    'potato:update-task-status': 'Updating task progress',
+    'fleet-command:read-artifacts': 'Reading project documents',
+    'fleet-command:create-artifacts': 'Writing documentation',
+    'fleet-command:add-comment-to-task': 'Adding notes to task',
+    'fleet-command:notify-user': 'Preparing update',
+    'fleet-command:ask-question': 'Formulating question',
+    'fleet-command:update-ralph-loop': 'Updating review status',
+    'fleet-command:create-task': 'Creating new task',
+    'fleet-command:get-task': 'Checking task details',
+    'fleet-command:update-task-status': 'Updating task progress',
     'pull-request': 'Preparing pull request',
   }
 
@@ -72,8 +72,8 @@ export function formatToolActivity(toolName: string, input?: Record<string, unkn
   }
 
   // Handle MCP tools
-  if (toolName.startsWith('mcp__potato-cannon__')) {
-    const mcpTool = toolName.replace('mcp__potato-cannon__', '')
+  if (toolName.startsWith('mcp__fleet-command__')) {
+    const mcpTool = toolName.replace('mcp__fleet-command__', '')
     return mcpPhrases[mcpTool] || 'Processing'
   }
 

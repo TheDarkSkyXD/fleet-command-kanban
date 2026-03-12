@@ -1,7 +1,7 @@
 import { Bot, RotateCcw, ListChecks, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
-import type { WorkerNode } from '@potato-cannon/shared'
+import type { WorkerNode } from '@fleet-command/shared'
 
 interface WorkerTreeItemProps {
   node: WorkerNode

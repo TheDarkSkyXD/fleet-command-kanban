@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getAutomationType, type AutomationType } from './template.utils'
-import type { TemplatePhase } from '@potato-cannon/shared'
+import type { TemplatePhase } from '@fleet-command/shared'
 
 interface PhaseCardProps {
   phase: TemplatePhase

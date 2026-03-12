@@ -41,90 +41,44 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type LogoVariant = "standard" | "premium";
-
-function PotatoCannonLogo({
+function FleetCommandLogo({
   collapsed = false,
-  variant = "standard",
 }: {
   collapsed?: boolean;
-  variant?: LogoVariant;
 }) {
-  const variantClass = variant === "standard" ? "brand-logo--standard" : "";
   return (
     <div className="brand-logo__wrapper">
       <div
-        className={`brand-logo ${collapsed ? "brand-logo--collapsed" : ""} ${variantClass}`}
+        className={`brand-logo brand-logo--standard ${collapsed ? "brand-logo--collapsed" : ""}`}
       >
-        {/* Animated potato projectile */}
-        <div className="brand-logo__potato">
-          <svg viewBox="0 0 32 32" className="brand-logo__potato-svg">
-            {/* Potato body */}
-            <ellipse
-              cx="16"
-              cy="16"
-              rx="11"
-              ry="9"
-              className="brand-logo__potato-body"
+        <div className="brand-logo__icon">
+          <svg viewBox="0 0 32 32" className="brand-logo__icon-svg" style={{ width: 28, height: 28 }}>
+            {/* Shield outline */}
+            <path
+              d="M16 2 L28 7 L28 17 C28 24 22 29 16 31 C10 29 4 24 4 17 L4 7 Z"
+              fill="rgba(96,165,250,0.15)"
+              stroke="#60A5FA"
+              strokeWidth="1.5"
             />
-            {/* Potato spots */}
-            <circle
-              cx="12"
-              cy="13"
-              r="1.5"
-              className="brand-logo__potato-spot"
-            />
-            <circle cx="19" cy="11" r="1" className="brand-logo__potato-spot" />
-            <circle
-              cx="14"
-              cy="19"
-              r="1.2"
-              className="brand-logo__potato-spot"
-            />
-            <circle
-              cx="21"
-              cy="17"
-              r="0.8"
-              className="brand-logo__potato-spot"
-            />
-            {/* Motion lines */}
-            <line
-              x1="3"
-              y1="14"
-              x2="6"
-              y2="14"
-              className="brand-logo__motion-line"
-            />
-            <line
-              x1="2"
-              y1="17"
-              x2="5"
-              y2="17"
-              className="brand-logo__motion-line"
-            />
-            <line
-              x1="4"
-              y1="20"
-              x2="7"
-              y2="20"
-              className="brand-logo__motion-line"
-            />
+            {/* Fleet chevrons */}
+            <path d="M16 8 L22 14" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 8 L10 14" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 14 L23 21" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M16 14 L9 21" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M16 20 L24 28" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+            <path d="M16 20 L8 28" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+            {/* Command point */}
+            <circle cx="16" cy="7" r="2" fill="#F59E0B" />
           </svg>
         </div>
 
-        {/* Text treatment */}
         {!collapsed && (
           <div className="brand-logo__text">
-            <span className="brand-logo__title">POTATO</span>
-            <span className="brand-logo__subtitle">CANNON</span>
+            <span className="brand-logo__title">FLEET</span>
+            <span className="brand-logo__subtitle">COMMAND</span>
           </div>
         )}
       </div>
-
-      {/* Edition label - outside brand-logo to avoid clipping */}
-      {!collapsed && variant === "premium" && (
-        <span className="brand-logo__edition">Yukon Gold Edition</span>
-      )}
     </div>
   );
 }
@@ -245,19 +199,19 @@ export function AppSidebar() {
             to="/"
             className="group-data-[collapsible=icon]:hidden flex items-center cursor-pointer"
           >
-            <PotatoCannonLogo />
+            <FleetCommandLogo />
           </Link>
-          {/* Collapsed branding - just the potato */}
+          {/* Collapsed branding - just the icon */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
                 to="/"
                 className="hidden group-data-[collapsible=icon]:flex justify-center items-center cursor-pointer"
               >
-                <PotatoCannonLogo collapsed />
+                <FleetCommandLogo collapsed />
               </Link>
             </TooltipTrigger>
-            <TooltipContent side="right">Potato Cannon</TooltipContent>
+            <TooltipContent side="right">Fleet Command</TooltipContent>
           </Tooltip>
           <SidebarMenu className="group-data-[collapsible=icon]:items-center">
             {/* Dropdown menu - shows below logo when collapsed */}

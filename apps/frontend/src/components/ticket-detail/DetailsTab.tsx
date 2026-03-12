@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/dialog'
 import { cn, formatDate, formatTime, timeAgo } from '@/lib/utils'
 import { ArtifactViewerFull } from './ArtifactViewerFull'
-import type { Artifact, TicketHistoryEntry, SessionLogEntry } from '@potato-cannon/shared'
+import type { Artifact, TicketHistoryEntry, SessionLogEntry } from '@fleet-command/shared'
 
 interface DetailsTabProps {
   projectId: string

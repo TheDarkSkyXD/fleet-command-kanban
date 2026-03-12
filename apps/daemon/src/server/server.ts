@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import { EventEmitter } from "events";
 import { lock } from "proper-lockfile";
 
-import { DEFAULT_PORT } from "@potato-cannon/shared";
+import { DEFAULT_PORT } from "@fleet-command/shared";
 import { eventBus } from "../utils/event-bus.js";
 import { formatListenUrls } from "../utils/listen-urls.js";
 import { Logger } from "../utils/logger.js";
@@ -446,7 +446,7 @@ export async function main(): Promise<void> {
   const logger = new Logger();
   await logger.init();
 
-  console.log("Potato Cannon Dashboard Starting...\n");
+  console.log("Fleet Command Dashboard Starting...\n");
 
   await loadConfig();
   await ensureGlobalDir();
@@ -555,7 +555,7 @@ export async function main(): Promise<void> {
   let frontendDist: string | null = null;
   if (process.env.NODE_ENV !== 'development') {
     // Electron passes the frontend path explicitly via env var
-    const envPath = process.env.POTATO_FRONTEND_DIST;
+    const envPath = process.env.FLEET_FRONTEND_DIST;
     // Try monorepo path: apps/daemon/dist/server -> apps/frontend/dist
     const monorepoPath = path.join(__dirname, '..', '..', '..', 'frontend', 'dist');
     // Electron bundle path: Resources/daemon/dist/server -> Resources/frontend
@@ -890,7 +890,7 @@ export async function main(): Promise<void> {
       console.log("Slack not configured - provider disabled");
     }
 
-    console.log("\nPotato Cannon Dashboard Ready!\n");
+    console.log("\nFleet Command Dashboard Ready!\n");
 
     // Recover interrupted sessions (mid-execution with worker-state.json)
     await recoverInterruptedSessions();

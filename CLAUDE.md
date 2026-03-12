@@ -1,4 +1,4 @@
-# Potato Cannon
+# Fleet Command
 
 Multi-agent software engineering daemon for autonomous development pipelines. Orchestrates Claude Code sessions through configurable workflow phases with adversarial review loops.
 
@@ -23,9 +23,9 @@ cd apps/frontend && pnpm test  # Frontend tests (Vitest)
 cd apps/daemon && pnpm test    # Daemon tests (Node test runner)
 
 # CLI (after build)
-./apps/daemon/bin/potato-cannon.js start          # Start daemon
-./apps/daemon/bin/potato-cannon.js status         # Check daemon status
-./apps/daemon/bin/potato-cannon.js stop           # Stop daemon
+./apps/daemon/bin/fleet-command.js start          # Start daemon
+./apps/daemon/bin/fleet-command.js status         # Check daemon status
+./apps/daemon/bin/fleet-command.js stop           # Stop daemon
 ```
 
 ## Code Style
@@ -42,13 +42,13 @@ cd apps/daemon && pnpm test    # Daemon tests (Node test runner)
 ## Architecture
 
 ```
-potato-cannon-monorepo/
+fleet-command-monorepo/
 ├── apps/
-│   ├── daemon/        # @potato-cannon/daemon - Express server, MCP, SQLite
-│   ├── frontend/      # @potato-cannon/frontend - React 19, Vite, Tailwind
-│   └── desktop/       # @potato-cannon/desktop - Electron wrapper
+│   ├── daemon/        # @fleet-command/daemon - Express server, MCP, SQLite
+│   ├── frontend/      # @fleet-command/frontend - React 19, Vite, Tailwind
+│   └── desktop/       # @fleet-command/desktop - Electron wrapper
 └── packages/
-    └── shared/        # @potato-cannon/shared - Types, constants
+    └── shared/        # @fleet-command/shared - Types, constants
 ```
 
 ### Data Flow
@@ -84,7 +84,7 @@ Workflow phases define a `workers` array. Workers form a tree:
 | `ralphLoop` | Adversarial review until approved or maxAttempts |
 | `taskLoop` | Iterates nested workers over task queue |
 
-State is persisted per-ticket at `~/.potato-cannon/projects/{projectId}/tickets/{ticketId}/worker-state.json` for crash recovery.
+State is persisted per-ticket at `~/.fleet-command/projects/{projectId}/tickets/{ticketId}/worker-state.json` for crash recovery.
 
 Key files:
 - `apps/daemon/src/services/session/worker-executor.ts` - Tree interpreter
@@ -124,7 +124,7 @@ Key files:
 
 ## Database
 
-**Location:** `~/.potato-cannon/potato.db` (SQLite with WAL mode)
+**Location:** `~/.fleet-command/fleet-command.db` (SQLite with WAL mode)
 
 | Table | Purpose |
 |-------|---------|
@@ -144,8 +144,8 @@ Key files:
 ## File System Layout
 
 ```
-~/.potato-cannon/
-├── potato.db                 # SQLite database
+~/.fleet-command/
+├── fleet-command.db                 # SQLite database
 ├── config.json               # Global config (Telegram, port)
 ├── daemon.pid                # Running daemon PID
 ├── daemon.log                # Daemon logs (10MB rotation)
@@ -199,7 +199,7 @@ See `apps/daemon/templates/workflows/CLAUDE.md` for full workflow documentation.
 
 ## Configuration
 
-**Global config:** `~/.potato-cannon/config.json`
+**Global config:** `~/.fleet-command/config.json`
 
 ```json
 {
@@ -215,7 +215,7 @@ See `apps/daemon/templates/workflows/CLAUDE.md` for full workflow documentation.
 ```
 
 **Environment variables:**
-- `POTATO_DEBUG=1` - Enable debug logging
+- `FLEET_DEBUG=1` - Enable debug logging
 - `NODE_ENV=development` - Development mode
 
 ## Sub-documentation

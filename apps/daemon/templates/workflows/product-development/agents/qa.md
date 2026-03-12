@@ -85,7 +85,7 @@ go test ./...
 
 ## Step 5: Report Results
 
-Use the skill: `potato:notify-user` to report the final status.
+Use the skill: `fleet-command:notify-user` to report the final status.
 
 **If all checks pass:**
 

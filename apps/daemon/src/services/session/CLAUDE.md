@@ -156,10 +156,10 @@ eventEmitter.emit("session:ended", { sessionId, ...meta });
 
 ## Debug Logging
 
-When `POTATO_DEBUG=1` or `NODE_ENV=development`, debug logs are created in:
+When `FLEET_DEBUG=1` or `NODE_ENV=development`, debug logs are created in:
 
 ```
-~/.potato-cannon/projects/{projectId}/tickets/{ticketId}/logs/
+~/.fleet-command/projects/{projectId}/tickets/{ticketId}/logs/
   daemon.log                          # Orchestration events
   prompts/
     prompt-1-2026-02-01T12-00-00-000Z.md
@@ -180,7 +180,7 @@ Worktree requirement is defined per-phase in the template's `workflow.json`:
 - `requiresWorktree: true` - Creates isolated git worktree
 - `requiresWorktree: false` (default) - Works in main repo
 
-Worktrees live at: `{projectPath}/.potato/worktrees/{ticketId}/`
+Worktrees live at: `{projectPath}/.fleet-command/worktrees/{ticketId}/`
 
 ## Adding a New Phase
 

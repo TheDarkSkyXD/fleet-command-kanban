@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 import { randomUUID } from "crypto";
 import { getDatabase } from "./db.js";
-import type { Folder } from "@potato-cannon/shared";
+import type { Folder } from "@fleet-command/shared";
 
 /**
  * Map a database row to a Folder object.

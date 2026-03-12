@@ -1,6 +1,6 @@
 # MCP Proxy
 
-Thin stdio↔HTTP bridge connecting Claude Code to the Potato Cannon daemon.
+Thin stdio↔HTTP bridge connecting Claude Code to the Fleet Command daemon.
 
 ## Why a Proxy?
 
@@ -24,7 +24,7 @@ After (working):
 
 ### proxy.ts (~100 lines)
 
-1. **Startup**: Reads `POTATO_PROJECT_ID`, `POTATO_TICKET_ID`, `POTATO_BRAINSTORM_ID` from environment
+1. **Startup**: Reads `FLEET_PROJECT_ID`, `FLEET_TICKET_ID`, `FLEET_BRAINSTORM_ID` from environment
 2. **ListTools**: Fetches tool list from daemon (`GET /mcp/tools`), caches it
 3. **CallTool**: Forwards to daemon (`POST /mcp/call`) with context, returns result
 
@@ -66,13 +66,13 @@ The `SessionService` spawns Claude Code with MCP config pointing to the proxy:
 ```typescript
 const mcpConfig = {
   mcpServers: {
-    "potato-cannon": {
+    "fleet-command": {
       command: "node",
       args: ["/path/to/dist/mcp/proxy.js"],
       env: {
-        POTATO_PROJECT_ID: projectId,
-        POTATO_TICKET_ID: ticketId, // or empty for brainstorms
-        POTATO_BRAINSTORM_ID: "", // or brainstormId
+        FLEET_PROJECT_ID: projectId,
+        FLEET_TICKET_ID: ticketId, // or empty for brainstorms
+        FLEET_BRAINSTORM_ID: "", // or brainstormId
       },
     },
   },
@@ -110,7 +110,7 @@ The daemon imports these directly. The proxy just forwards calls.
 
 The `body` field is essential for build tasks - it contains everything the builder needs to execute the task without referring back to the specification.
 
-Tasks are stored at `~/.potato-cannon/tickets/{projectId}/{ticketId}/tasks/{phase}/task{X}.json`
+Tasks are stored at `~/.fleet-command/tickets/{projectId}/{ticketId}/tasks/{phase}/task{X}.json`
 
 ### Artifact Tools
 

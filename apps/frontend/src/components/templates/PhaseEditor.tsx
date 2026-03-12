@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import { AgentCard } from './AgentCard'
 import { getAutomationType, generateAgentId, type AutomationType } from './template.utils'
 import { cn } from '@/lib/utils'
-import type { TemplatePhase, TemplateAgent, RalphLoopConfig, TicketLoopConfig } from '@potato-cannon/shared'
+import type { TemplatePhase, TemplateAgent, RalphLoopConfig, TicketLoopConfig } from '@fleet-command/shared'
 
 interface PhaseEditorProps {
   phase: TemplatePhase

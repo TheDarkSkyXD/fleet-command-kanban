@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Square, CheckSquare } from 'lucide-react'
 import { api } from '@/api/client'
-import type { Task } from '@potato-cannon/shared'
+import type { Task } from '@fleet-command/shared'
 
 interface TaskListProps {
   projectId: string

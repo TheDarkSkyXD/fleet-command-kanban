@@ -1,4 +1,4 @@
-# Slack App Manifest for Potato Cannon
+# Slack App Manifest for Fleet Command
 #
 # Use this as a reference when creating your Slack app at https://api.slack.com/apps
 # You can paste this into "Create from manifest" or configure settings manually.
@@ -9,13 +9,13 @@
 #   3. The App-Level Token needs the "connections:write" scope
 
 display_information:
-  name: Potato Cannon
+  name: Fleet Command
   description: Multi-agent software engineering daemon
   background_color: "#8B4513"
 
 features:
   bot_user:
-    display_name: Potato Cannon
+    display_name: Fleet Command
     always_online: true
 
 oauth_config:

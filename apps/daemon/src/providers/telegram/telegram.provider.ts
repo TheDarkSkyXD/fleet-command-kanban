@@ -112,7 +112,7 @@ export class TelegramProvider implements ChatProvider {
       // Send welcome message
       await this.api.sendMessage(
         this.config.forumGroupId,
-        `*Potato Cannon*\n\nStarting work on: *${title}*\n\nI'll ask questions here as I work.`,
+        `*Fleet Command*\n\nStarting work on: *${title}*\n\nI'll ask questions here as I work.`,
         { messageThreadId: topic.message_thread_id },
       );
 

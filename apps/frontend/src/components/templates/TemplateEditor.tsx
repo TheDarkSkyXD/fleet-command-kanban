@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { PhaseCard } from './PhaseCard'
 import { PhaseEditor } from './PhaseEditor'
-import type { Template, TemplatePhase } from '@potato-cannon/shared'
+import type { Template, TemplatePhase } from '@fleet-command/shared'
 
 interface TemplateEditorProps {
   name: string

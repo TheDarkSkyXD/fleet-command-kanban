@@ -8,7 +8,7 @@ describe("isValidBranchPrefix", () => {
   });
 
   it("should accept valid prefixes with lowercase letters", () => {
-    assert.strictEqual(isValidBranchPrefix("potato"), true);
+    assert.strictEqual(isValidBranchPrefix("fleet"), true);
   });
 
   it("should accept valid prefixes with uppercase letters", () => {

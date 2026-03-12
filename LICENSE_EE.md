@@ -1,12 +1,12 @@
-# Potato Cannon Enterprise License
+# Fleet Command Enterprise License
 
 Version 1.0
 
 ## Acceptance
 
-This Software License Agreement ("Agreement") is between Potato Cannon ("Licensor") and you ("Licensee").
+This Software License Agreement ("Agreement") is between Fleet Command ("Licensor") and you ("Licensee").
 
-This software and associated documentation files (the "Software") may only be used in production if you (and any entity that you represent) hold a valid Potato Cannon Enterprise license corresponding to your usage. Subject to the foregoing sentence, you are free to modify this Software and publish patches to the Software. You agree that Licensor and/or its licensors (as applicable) retain all right, title and interest in and to all Software incorporated in such modifications and/or patches, and all such Software may only be used, copied, modified, displayed, distributed, or otherwise exploited with a valid Potato Cannon Enterprise license for that Software.
+This software and associated documentation files (the "Software") may only be used in production if you (and any entity that you represent) hold a valid Fleet Command Enterprise license corresponding to your usage. Subject to the foregoing sentence, you are free to modify this Software and publish patches to the Software. You agree that Licensor and/or its licensors (as applicable) retain all right, title and interest in and to all Software incorporated in such modifications and/or patches, and all such Software may only be used, copied, modified, displayed, distributed, or otherwise exploited with a valid Fleet Command Enterprise license for that Software.
 
 Notwithstanding the foregoing, you may copy and modify the Software for development and testing purposes, without requiring a subscription. You agree that Licensor and/or its licensors (as applicable) retain all right, title and interest in and to all such modifications.
 
@@ -40,4 +40,4 @@ For questions about licensing, contact: chrisrathgeb@gmail.com
 
 ---
 
-Copyright (c) 2024-present Potato Cannon
+Copyright (c) 2024-present Fleet Command

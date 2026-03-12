@@ -9,7 +9,7 @@ import { useArchiveTicket } from '@/hooks/queries'
 import { ListItemCard } from '@/components/ui/list-item-card'
 import { IconButton } from '@/components/ui/icon-button'
 import { ArchiveConfirmDialog, shouldShowArchiveWarning } from '@/components/ticket-detail/ArchiveConfirmDialog'
-import type { Ticket } from '@potato-cannon/shared'
+import type { Ticket } from '@fleet-command/shared'
 
 interface TicketCardProps {
   ticket: Ticket

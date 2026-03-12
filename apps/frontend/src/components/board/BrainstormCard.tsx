@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn, timeAgo } from '@/lib/utils'
 import { useBrainstormMessage } from '@/hooks/useSSE'
 import { useAppStore } from '@/stores/appStore'
-import type { Brainstorm } from '@potato-cannon/shared'
+import type { Brainstorm } from '@fleet-command/shared'
 
 interface BrainstormCardProps {
   brainstorm: Brainstorm
