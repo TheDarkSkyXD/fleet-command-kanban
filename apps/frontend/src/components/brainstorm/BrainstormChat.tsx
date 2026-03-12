@@ -23,6 +23,7 @@ interface BrainstormChatProps {
   projectId: string
   brainstormId: string
   brainstormName: string
+  agentName?: string
   initialMessage?: string
   onBack?: () => void
   onDelete?: () => void
@@ -32,6 +33,7 @@ export function BrainstormChat({
   projectId,
   brainstormId,
   brainstormName,
+  agentName = 'Potato',
   initialMessage,
   onBack,
   onDelete
@@ -259,7 +261,7 @@ export function BrainstormChat({
   }, [projectId, brainstormId, isSubmitting])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       handleSend(input)
     }
@@ -334,7 +336,7 @@ export function BrainstormChat({
           )}
 
           {messages.map((message, index) => (
-            <MessageBubble key={index} message={message} />
+            <MessageBubble key={index} message={message} agentName={agentName} />
           ))}
 
           {(isWaitingForResponse || currentActivity) && <ThinkingIndicator activity={currentActivity} />}
@@ -430,9 +432,10 @@ export function BrainstormChat({
 
 interface MessageBubbleProps {
   message: BrainstormMessage
+  agentName?: string
 }
 
-function MessageBubble({ message }: MessageBubbleProps) {
+function MessageBubble({ message, agentName = 'Potato' }: MessageBubbleProps) {
   const isUser = message.type === 'user'
   const isError = message.type === 'error'
   const isQuestion = message.type === 'question'
@@ -466,7 +469,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
         {(isQuestion || isNotification) && (
           <div className="flex items-center gap-2 mb-2 text-text-muted">
             <Bot className="h-3 w-3" />
-            <span className="text-xs font-medium">Potato</span>
+            <span className="text-xs font-medium">{agentName}</span>
           </div>
         )}
         {isError && (
@@ -477,7 +480,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
         )}
         {(isQuestion || isNotification) && renderedContent ? (
           <div
-            className="prose prose-sm prose-invert max-w-none text-text-secondary break-words
+            className="prose prose-sm prose-invert max-w-none text-text-primary break-words
               [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0
               [&_a]:text-accent [&_a]:no-underline hover:[&_a]:underline
               [&_code]:bg-bg-tertiary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded
@@ -491,7 +494,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
             dangerouslySetInnerHTML={{ __html: renderedContent }}
           />
         ) : (
-          <p className="text-sm whitespace-pre-wrap break-words">
+          <p className="text-sm whitespace-pre-wrap break-words text-text-primary">
             <Linkify text={message.text || ''} />
           </p>
         )}

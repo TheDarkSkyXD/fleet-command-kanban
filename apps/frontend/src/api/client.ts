@@ -43,7 +43,19 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return text ? JSON.parse(text) : (null as T)
 }
 
+export interface ClaudeStatus {
+  installed: boolean
+  authenticated: boolean
+  version: string | null
+  email: string | null
+}
+
 export const api = {
+  // ============ Claude CLI ============
+
+  getClaudeStatus: () =>
+    request<ClaudeStatus>('/api/claude-status'),
+
   // ============ Projects ============
 
   getProjects: () =>
@@ -60,7 +72,7 @@ export const api = {
       method: 'DELETE'
     }),
 
-  updateProject: (id: string, updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; branchPrefix?: string; folderId?: string | null }) =>
+  updateProject: (id: string, updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; branchPrefix?: string; ticketPrefix?: string; agentName?: string; folderId?: string | null }) =>
     request<Project>(`/api/projects/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(updates)
@@ -412,6 +424,15 @@ export const api = {
     request<WorkerTreeResponse>(
       `/api/projects/${encodeURIComponent(projectId)}/phases/${encodeURIComponent(phase)}/workers`
     ),
+
+  // ============ Filesystem ============
+
+  browseFilesystem: (dirPath?: string) =>
+    request<{
+      path: string;
+      parent: string | null;
+      entries: Array<{ name: string; path: string; isDirectory: boolean }>;
+    }>(`/api/filesystem/browse${dirPath ? `?path=${encodeURIComponent(dirPath)}` : ''}`),
 
   // ============ Agent Overrides ============
 

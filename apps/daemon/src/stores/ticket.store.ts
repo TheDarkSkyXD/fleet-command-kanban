@@ -77,7 +77,10 @@ function getTicketDir(projectId: string, ticketId: string): string {
 }
 
 function getProjectPrefixFromDb(db: Database.Database, projectId: string): string {
-  const row = db.prepare("SELECT display_name, slug FROM projects WHERE id = ?").get(projectId) as { display_name: string; slug: string } | undefined;
+  const row = db.prepare("SELECT display_name, slug, ticket_prefix FROM projects WHERE id = ?").get(projectId) as { display_name: string; slug: string; ticket_prefix: string | null } | undefined;
+  if (row?.ticket_prefix) {
+    return row.ticket_prefix.toUpperCase();
+  }
   const name = row?.display_name || row?.slug || "TKT";
   return (
     name

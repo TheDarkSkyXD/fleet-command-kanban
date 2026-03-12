@@ -197,6 +197,9 @@ export function registerProjectRoutes(
         disabledPhases: p.disabledPhases,
         disabledPhaseMigration: p.disabledPhaseMigration,
         swimlaneColors: p.swimlaneColors,
+        branchPrefix: p.branchPrefix,
+        ticketPrefix: p.ticketPrefix,
+        agentName: p.agentName,
         folderId: p.folderId,
       }));
       res.json(list);
@@ -293,6 +296,9 @@ export function registerProjectRoutes(
         icon?: string;
         color?: string;
         swimlaneColors?: Record<string, string>;
+        branchPrefix?: string;
+        ticketPrefix?: string;
+        agentName?: string;
         folderId?: string | null;
       };
 

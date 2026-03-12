@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { X, Lightbulb } from 'lucide-react'
 import { api } from '@/api/client'
 import { useAppStore } from '@/stores/appStore'
+import { useProjects } from '@/hooks/queries'
 import { Button } from '@/components/ui/button'
 import { BrainstormChat } from './BrainstormChat'
 import { BrainstormNewForm } from './BrainstormNewForm'
@@ -19,6 +20,8 @@ export function BrainstormDetailPanel() {
   const currentProjectId = useAppStore((s) => s.currentProjectId)
 
   const queryClient = useQueryClient()
+  const { data: projects } = useProjects()
+  const currentProject = projects?.find(p => p.id === brainstormSheetProjectId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   // Track the initial message so BrainstormChat can show a thinking indicator immediately
@@ -137,6 +140,7 @@ export function BrainstormDetailPanel() {
               projectId={brainstormSheetProjectId}
               brainstormId={brainstormSheetBrainstormId}
               brainstormName={brainstormSheetBrainstormName || 'Brainstorm'}
+              agentName={currentProject?.agentName}
               initialMessage={pendingInitialMessage ?? undefined}
               onDelete={handleDelete}
             />

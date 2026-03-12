@@ -45,6 +45,8 @@ export interface Project {
   disabledPhaseMigration?: boolean;    // true while migration is in progress
   swimlaneColors?: Record<string, string>;  // phase name -> hex color
   branchPrefix?: string;  // Custom branch prefix (default: 'potato')
+  ticketPrefix?: string;  // Custom ticket ID prefix (e.g., 'STR' for STR-1, STR-2)
+  agentName?: string;  // Custom agent display name in chat (default: 'Potato')
   folderId?: string | null;  // FK to folders table
 }
 

@@ -62,6 +62,8 @@ function rowToProject(row: Record<string, unknown>): Project {
       ? JSON.parse(row.swimlane_colors as string)
       : undefined,
     branchPrefix: (row.branch_prefix as string) || 'potato',
+    ticketPrefix: (row.ticket_prefix as string) || undefined,
+    agentName: (row.agent_name as string) || undefined,
     folderId: (row.folder_id as string) || null,
   };
 }
@@ -199,6 +201,14 @@ export class ProjectStore {
     if (updates.branchPrefix !== undefined) {
       fields.push("branch_prefix = ?");
       values.push(updates.branchPrefix || null);
+    }
+    if (updates.ticketPrefix !== undefined) {
+      fields.push("ticket_prefix = ?");
+      values.push(updates.ticketPrefix || null);
+    }
+    if (updates.agentName !== undefined) {
+      fields.push("agent_name = ?");
+      values.push(updates.agentName || null);
     }
     if (updates.folderId !== undefined) {
       fields.push("folder_id = ?");

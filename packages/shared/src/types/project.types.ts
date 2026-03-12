@@ -13,5 +13,7 @@ export interface Project {
   disabledPhaseMigration?: boolean
   swimlaneColors?: Record<string, string>
   branchPrefix?: string
+  ticketPrefix?: string
+  agentName?: string
   folderId?: string | null
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
@@ -41,6 +41,12 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
 
   const project = projects?.find(p => p.id === projectId)
 
+  // Derive the default ticket prefix from the project name (same logic as backend)
+  const defaultTicketPrefix = (project?.displayName || project?.id || 'TKT')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .substring(0, 3)
+    .toUpperCase() || 'TKT'
+
   // Local state for form fields
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('package')
@@ -48,11 +54,20 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('')
   const [branchPrefix, setBranchPrefix] = useState('potato')
   const [branchPrefixError, setBranchPrefixError] = useState<string | null>(null)
+  const [ticketPrefix, setTicketPrefix] = useState('')
+  const [ticketPrefixError, setTicketPrefixError] = useState<string | null>(null)
+  const [agentName, setAgentName] = useState('')
 
   // Validate branch prefix (git-safe characters only)
   const isValidBranchPrefix = (prefix: string): boolean => {
     if (!prefix) return true
     return /^[a-zA-Z0-9/_-]+$/.test(prefix)
+  }
+
+  // Validate ticket prefix (letters only, 2-5 chars)
+  const isValidTicketPrefix = (prefix: string): boolean => {
+    if (!prefix) return true
+    return /^[a-zA-Z]{2,5}$/.test(prefix)
   }
 
   // Dialog states
@@ -64,15 +79,22 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
   const [showChangelog, setShowChangelog] = useState(false)
   const { data: templateStatus } = useTemplateStatus(projectId)
 
-  // Sync local state from project data
+  // Track whether we've done the initial sync for this project
+  const initializedRef = useRef<string | null>(null)
+
+  // Sync local state from project data — only on initial load or project change
   useEffect(() => {
-    if (project) {
+    if (project && initializedRef.current !== project.id) {
+      initializedRef.current = project.id
       setName(project.displayName || project.id)
       setIcon(project.icon || 'package')
       setColor(project.color)
       setSelectedTemplate(project.template?.name || '')
       setBranchPrefix(project.branchPrefix || 'potato')
       setBranchPrefixError(null)
+      setTicketPrefix(project.ticketPrefix || '')
+      setTicketPrefixError(null)
+      setAgentName(project.agentName || '')
     }
   }, [project])
 
@@ -81,9 +103,11 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
     if (!project) return
     const newName = name.trim()
     if (newName && newName !== (project.displayName || project.id)) {
-      updateProject.mutate({ id: projectId, updates: { displayName: newName } })
+      api.updateProject(projectId, { displayName: newName }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] })
+      })
     }
-  }, [name, project, projectId, updateProject])
+  }, [name, project, projectId, queryClient])
 
   // Save name on Enter
   const handleNameKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -108,12 +132,63 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
     if (branchPrefixError) return // Don't save if invalid
     const newPrefix = branchPrefix.trim() || 'potato'
     if (newPrefix !== (project.branchPrefix || 'potato')) {
-      updateProject.mutate({ id: projectId, updates: { branchPrefix: newPrefix } })
+      api.updateProject(projectId, { branchPrefix: newPrefix }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] })
+      })
     }
-  }, [branchPrefix, branchPrefixError, project, projectId, updateProject])
+  }, [branchPrefix, branchPrefixError, project, projectId, queryClient])
 
   // Save branch prefix on Enter
   const handleBranchPrefixKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    }
+  }, [])
+
+  // Handle ticket prefix change with validation
+  const handleTicketPrefixChange = useCallback((value: string) => {
+    setTicketPrefix(value)
+    if (!isValidTicketPrefix(value)) {
+      setTicketPrefixError('Ticket prefix must be 2-5 letters only')
+    } else {
+      setTicketPrefixError(null)
+    }
+  }, [])
+
+  // Save ticket prefix on blur
+  const handleTicketPrefixBlur = useCallback(() => {
+    if (!project) return
+    if (ticketPrefixError) return
+    const newPrefix = ticketPrefix.trim().toUpperCase()
+    const currentPrefix = project.ticketPrefix || ''
+    if (newPrefix !== currentPrefix) {
+      api.updateProject(projectId, { ticketPrefix: newPrefix || undefined }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] })
+      })
+    }
+  }, [ticketPrefix, ticketPrefixError, project, projectId, queryClient])
+
+  // Save ticket prefix on Enter
+  const handleTicketPrefixKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.currentTarget.blur()
+    }
+  }, [])
+
+  // Save agent name on blur
+  const handleAgentNameBlur = useCallback(() => {
+    if (!project) return
+    const newName = agentName.trim()
+    const currentName = project.agentName || ''
+    if (newName !== currentName) {
+      api.updateProject(projectId, { agentName: newName || undefined }).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] })
+      })
+    }
+  }, [agentName, project, projectId, queryClient])
+
+  // Save agent name on Enter
+  const handleAgentNameKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.currentTarget.blur()
     }
@@ -194,6 +269,45 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
           />
         </SettingsSection>
 
+        {/* Agent Name */}
+        <SettingsSection
+          title="Agent Name"
+          description="The display name for the AI agent in brainstorm chats. Defaults to 'Potato' if empty."
+        >
+          <Input
+            value={agentName}
+            onChange={(e) => setAgentName(e.target.value)}
+            onBlur={handleAgentNameBlur}
+            onKeyDown={handleAgentNameKeyDown}
+            placeholder="Potato"
+            className="max-w-md"
+          />
+        </SettingsSection>
+
+        {/* Ticket Prefix */}
+        <SettingsSection
+          title="Ticket Prefix"
+          description="Custom prefix for ticket IDs. Leave empty to auto-generate from the project name."
+        >
+          <div className="space-y-2">
+            <Input
+              value={ticketPrefix}
+              onChange={(e) => handleTicketPrefixChange(e.target.value)}
+              onBlur={handleTicketPrefixBlur}
+              onKeyDown={handleTicketPrefixKeyDown}
+              placeholder={defaultTicketPrefix}
+              className="max-w-md uppercase"
+            />
+            {ticketPrefixError ? (
+              <p className="text-sm text-accent-red">{ticketPrefixError}</p>
+            ) : (
+              <p className="text-sm text-text-secondary">
+                Tickets will be named: {(ticketPrefix || defaultTicketPrefix).toUpperCase()}-1, {(ticketPrefix || defaultTicketPrefix).toUpperCase()}-2, ...
+              </p>
+            )}
+          </div>
+        </SettingsSection>
+
         {/* Branch Prefix */}
         <SettingsSection
           title="Branch Prefix"
@@ -212,7 +326,7 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
               <p className="text-sm text-accent-red">{branchPrefixError}</p>
             ) : (
               <p className="text-sm text-text-secondary">
-                Branches will be named: {branchPrefix || 'potato'}/POT-XX
+                Branches will be named: {branchPrefix || 'potato'}/{(ticketPrefix || defaultTicketPrefix).toUpperCase()}-XX
               </p>
             )}
           </div>

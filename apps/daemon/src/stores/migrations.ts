@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-const CURRENT_SCHEMA_VERSION = 7;
+const CURRENT_SCHEMA_VERSION = 9;
 
 /**
  * Run database migrations.
@@ -35,6 +35,14 @@ export function runMigrations(db: Database.Database): void {
 
   if (version < 7) {
     migrateV7(db);
+  }
+
+  if (version < 8) {
+    migrateV8(db);
+  }
+
+  if (version < 9) {
+    migrateV9(db);
   }
 
   db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
@@ -379,6 +387,20 @@ function migrateV5(db: Database.Database): void {
  */
 function migrateV6(db: Database.Database): void {
   db.exec(`ALTER TABLE projects ADD COLUMN branch_prefix TEXT DEFAULT 'potato'`);
+}
+
+/**
+ * V8: Add ticket_prefix column to projects table
+ */
+function migrateV8(db: Database.Database): void {
+  db.exec(`ALTER TABLE projects ADD COLUMN ticket_prefix TEXT`);
+}
+
+/**
+ * V9: Add agent_name column to projects table
+ */
+function migrateV9(db: Database.Database): void {
+  db.exec(`ALTER TABLE projects ADD COLUMN agent_name TEXT`);
 }
 
 /**

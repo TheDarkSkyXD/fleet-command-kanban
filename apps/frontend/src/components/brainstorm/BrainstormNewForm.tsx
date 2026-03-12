@@ -24,7 +24,7 @@ export function BrainstormNewForm({ onSubmit, isSubmitting }: BrainstormNewFormP
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       handleSubmit()
     }
@@ -57,7 +57,7 @@ export function BrainstormNewForm({ onSubmit, isSubmitting }: BrainstormNewFormP
           />
           <div className="flex justify-between items-center">
             <p className="text-xs text-text-muted">
-              Press Enter to send, Shift+Enter for new line
+              Ctrl+Enter to send
             </p>
             <Button
               onClick={handleSubmit}

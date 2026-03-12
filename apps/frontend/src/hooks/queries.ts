@@ -3,6 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import type { Ticket, Template, TemplatePhase } from '@potato-cannon/shared'
 
+// ============ Claude CLI ============
+
+export function useClaudeStatus() {
+  return useQuery({
+    queryKey: ['claude-status'],
+    queryFn: api.getClaudeStatus,
+    staleTime: 60_000, // Check at most once per minute
+    retry: false,
+  })
+}
+
 // ============ Projects ============
 
 export function useProjects() {
@@ -26,7 +37,7 @@ export function useAddProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; branchPrefix?: string; folderId?: string | null } }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; branchPrefix?: string; ticketPrefix?: string; folderId?: string | null } }) =>
       api.updateProject(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
