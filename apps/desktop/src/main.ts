@@ -1,13 +1,28 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { spawn, ChildProcess } from 'child_process'
+import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@potato-cannon/shared'
 
 // Set app name for dock/taskbar (must be before app is ready)
 app.setName('Potato Cannon')
 
 let daemonProcess: ChildProcess | null = null
+let mainWindow: BrowserWindow | null = null
+
+// Ensure only one instance runs at a time
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    // Focus existing window when a second instance is launched
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
 
 // Handle folder picker dialog
 ipcMain.handle('select-folder', async () => {
@@ -20,7 +35,22 @@ ipcMain.handle('select-folder', async () => {
   return result.filePaths[0]
 })
 
+async function isDaemonRunning(): Promise<boolean> {
+  try {
+    const response = await fetch(`http://localhost:${DEFAULT_PORT}/health`)
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
 async function startDaemon(): Promise<void> {
+  // Skip spawning daemon if one is already running (e.g., started by pnpm dev)
+  if (await isDaemonRunning()) {
+    console.log('[electron] Daemon already running, skipping spawn')
+    return
+  }
+
   const isDev = !app.isPackaged || process.env.NODE_ENV === 'development'
 
   // In dev: __dirname is apps/desktop/out/main/, go up 4 levels to repo root
@@ -141,12 +171,12 @@ function createWindow() {
     ? path.join(__dirname, '..', '..', 'build', 'icon.png')
     : path.join(process.resourcesPath, 'icon.png')
 
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     icon: iconPath,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '..', 'preload', 'index.cjs'),
       contextIsolation: true,
       nodeIntegration: false
     },
@@ -154,9 +184,18 @@ function createWindow() {
     backgroundColor: '#0d1117'
   })
 
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
+
   // Set dock icon on macOS
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(iconPath)
+  }
+
+  // In dev: clear cache to avoid stale HMR modules
+  if (isDev) {
+    mainWindow.webContents.session.clearCache()
   }
 
   // In dev: load from Vite dev server (which proxies API to daemon)
@@ -165,7 +204,7 @@ function createWindow() {
     ? `http://localhost:${DEFAULT_VITE_PORT}`
     : `http://localhost:${DEFAULT_PORT}`
 
-  win.loadURL(url)
+  mainWindow.loadURL(url)
 }
 
 app.whenReady().then(async () => {
@@ -197,7 +236,42 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
-  if (daemonProcess) {
-    daemonProcess.kill()
+  // Kill daemon child process tree if we spawned one
+  if (daemonProcess && daemonProcess.pid) {
+    killProcessTree(daemonProcess.pid)
   }
+
+  // Kill daemon via PID file (handles case where daemon was started externally)
+  try {
+    const pidFile = path.join(
+      process.env.USERPROFILE || process.env.HOME || '',
+      '.potato-cannon',
+      'daemon.pid'
+    )
+    if (fs.existsSync(pidFile)) {
+      const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10)
+      if (pid) killProcessTree(pid)
+    }
+  } catch { /* ignore */ }
+
+  // Kill the parent process tree (pnpm start) to stop all sibling processes.
+  // ppid is the pnpm process that launched daemon + frontend + desktop in parallel.
+  try {
+    const ppid = process.ppid
+    if (ppid && ppid > 1) {
+      killProcessTree(ppid)
+    }
+  } catch { /* ignore */ }
 })
+
+function killProcessTree(pid: number): void {
+  try {
+    if (process.platform === 'win32') {
+      // /T = kill entire process tree, /F = force
+      spawnSync('taskkill', ['/T', '/F', '/PID', String(pid)], { stdio: 'ignore' })
+    } else {
+      // Kill process group on Unix
+      process.kill(-pid, 'SIGTERM')
+    }
+  } catch { /* already dead */ }
+}

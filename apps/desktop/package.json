@@ -10,7 +10,7 @@
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
-    "dev": "electron-vite build && NODE_ENV=development electron .",
+    "dev": "electron-vite build && electron .",
     "dev:watch": "electron-vite dev",
     "prebuild": "node scripts/prepare-daemon.cjs",
     "build": "electron-vite build && electron-builder",

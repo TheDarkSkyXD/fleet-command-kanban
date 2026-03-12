@@ -7,10 +7,11 @@
   "scripts": {
     "rebuild:node": "pnpm install --force && pnpm run fix:node-pty",
     "rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
-    "dev": "pnpm --filter @potato-cannon/daemon dev & pnpm --filter @potato-cannon/frontend dev",
+    "start": "pnpm --parallel --filter @potato-cannon/daemon --filter @potato-cannon/frontend --filter @potato-cannon/desktop dev",
+    "dev": "pnpm --parallel --filter @potato-cannon/daemon --filter @potato-cannon/frontend dev",
     "dev:daemon": "pnpm --filter @potato-cannon/daemon dev",
     "dev:frontend": "pnpm --filter @potato-cannon/frontend dev",
-    "dev:desktop": "pnpm -w run rebuild:electron && pnpm --filter @potato-cannon/desktop dev",
+    "dev:desktop": "pnpm --filter @potato-cannon/desktop dev",
     "build": "pnpm -r build && pnpm run fix:node-pty",
     "fix:node-pty": "chmod +x node_modules/.pnpm/node-pty@*/node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper 2>/dev/null || true",
     "build:shared": "pnpm --filter @potato-cannon/shared build",

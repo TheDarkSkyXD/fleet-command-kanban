@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc && cp -r src/system-agents/agents dist/system-agents/",
     "start": "node dist/index.js",
-    "dev": "tsc -b -w & NODE_ENV=development node --watch dist/index.js",
+    "dev": "node bin/potato-cannon.js start",
+    "dev:watch": "tsc -b -w & NODE_ENV=development node --watch dist/index.js",
     "test": "node --experimental-test-module-mocks --test dist/**/*.test.js",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
