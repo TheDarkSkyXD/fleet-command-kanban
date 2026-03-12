@@ -6,6 +6,47 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useClaudeStatus } from '@/hooks/queries'
+
+function ClaudeStatusIndicator() {
+  const { data: status, isLoading } = useClaudeStatus()
+
+  if (isLoading) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-text-muted">
+            <div className="h-2 w-2 rounded-full bg-text-muted animate-pulse" />
+            <span>Claude</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>Checking Claude CLI status...</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  const isReady = status?.installed && status?.authenticated
+  const label = !status?.installed
+    ? 'Claude CLI not installed'
+    : !status?.authenticated
+      ? 'Claude CLI not authenticated'
+      : `Claude CLI v${status.version}${status.email ? ` · ${status.email}` : ''}`
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-text-muted">
+          <div className={cn(
+            'h-2 w-2 rounded-full',
+            isReady ? 'bg-accent-green' : 'bg-accent-red'
+          )} />
+          <span>Claude</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
 
 export function ViewTabs() {
   const location = useLocation()
@@ -40,6 +81,7 @@ export function ViewTabs() {
         <TooltipContent>An AI Assisted Kanban board</TooltipContent>
       </Tooltip>
       <div className="flex-1" />
+      <ClaudeStatusIndicator />
       <Tooltip>
         <TooltipTrigger asChild>
           <Link

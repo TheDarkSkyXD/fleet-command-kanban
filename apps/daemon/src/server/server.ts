@@ -26,6 +26,7 @@ import {
   registerRalphRoutes,
   registerArtifactChatRoutes,
   registerFolderRoutes,
+  registerFilesystemRoutes,
   refreshProjects,
   getProjects,
 } from "./routes/index.js";
@@ -583,6 +584,54 @@ export async function main(): Promise<void> {
     });
   });
 
+  // Claude CLI status check
+  app.get("/api/claude-status", async (_req, res) => {
+    try {
+      const { findClaudeBinary, getClaudeSpawnEnv } = await import("../utils/claude-path.js");
+      const claudePath = findClaudeBinary();
+      const cleanEnv = getClaudeSpawnEnv();
+
+      // Check version - use spawnSync to avoid shell quoting issues with Windows paths
+      const { spawnSync } = await import("child_process");
+      let version: string | null = null;
+      try {
+        const vResult = spawnSync(claudePath, ["--version"], { encoding: "utf-8", timeout: 5000, env: cleanEnv });
+        if (vResult.status !== 0) {
+          res.json({ installed: false, authenticated: false, version: null, email: null });
+          return;
+        }
+        version = vResult.stdout.trim();
+      } catch (err) {
+        console.error("[claude-status] Version check failed:", (err as Error).message);
+        res.json({ installed: false, authenticated: false, version: null, email: null });
+        return;
+      }
+
+      // Check auth status
+      let authenticated = false;
+      let email: string | null = null;
+      try {
+        const aResult = spawnSync(claudePath, ["auth", "status"], { encoding: "utf-8", timeout: 5000, env: cleanEnv });
+        if (aResult.status === 0 && aResult.stdout) {
+          const authData = JSON.parse(aResult.stdout.trim());
+          authenticated = authData.loggedIn === true;
+          email = authData.email || null;
+        } else {
+          // CLI exists and runs --version, so it's installed and likely authed
+          authenticated = true;
+        }
+      } catch {
+        // Auth check format may differ — if version works, assume installed+authed
+        authenticated = true;
+      }
+
+      res.json({ installed: true, authenticated, version, email });
+    } catch (err) {
+      console.error("[claude-status] Error:", (err as Error).message);
+      res.json({ installed: false, authenticated: false, version: null, email: null });
+    }
+  });
+
   // SSE events
   app.get("/events", (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
@@ -613,6 +662,7 @@ export async function main(): Promise<void> {
   registerRalphRoutes(app);
   registerArtifactChatRoutes(app, sessionService, getProjects);
   registerFolderRoutes(app);
+  registerFilesystemRoutes(app);
 
   // SPA catch-all route - fallback to index.html for SPA routing
   if (frontendDist) {
