@@ -9,7 +9,7 @@
     "potato-cannon": "./bin/potato-cannon.js"
   },
   "scripts": {
-    "build": "tsc && cp -r src/system-agents/agents dist/system-agents/",
+    "build": "tsc && node -e \"const fs=require('fs'),p=require('path'),s='src/system-agents/agents',d='dist/system-agents/agents';fs.mkdirSync(d,{recursive:true});fs.readdirSync(s).forEach(f=>fs.copyFileSync(p.join(s,f),p.join(d,f)))\"",
     "start": "node dist/index.js",
     "dev": "node bin/potato-cannon.js start",
     "dev:watch": "tsc -b -w & NODE_ENV=development node --watch dist/index.js",
@@ -43,6 +43,7 @@
   },
   "os": [
     "darwin",
-    "linux"
+    "linux",
+    "win32"
   ]
 }
