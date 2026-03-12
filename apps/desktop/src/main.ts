@@ -7,8 +7,18 @@ import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@fleet-command/shared'
 // Set app name for dock/taskbar (must be before app is ready)
 app.setName('Fleet Command Kanban')
 
+// Handle GPU process crashes gracefully to prevent black screens
+app.on('gpu-info-update', () => { /* keep app alive */ })
+app.on('child-process-gone', (_event, details) => {
+  if (details.type === 'GPU') {
+    console.error('[electron] GPU process gone, reason:', details.reason)
+  }
+})
+
 let daemonProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
+let weSpawnedDaemon = false
+let isQuitting = false
 
 // Ensure only one instance runs at a time
 const gotTheLock = app.requestSingleInstanceLock()
@@ -128,7 +138,14 @@ async function startDaemon(): Promise<void> {
 
   daemonProcess = spawn(nodePath, nodeArgs, {
     env,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // detached: true gives the daemon its own process group.
+    // - Unix: setsid() makes it a process group leader so we can kill the
+    //   entire group (daemon + Claude PTY sessions + MCP proxies) with one signal.
+    //   Also prevents EPIPE crashes when Electron exits and closes pipes.
+    // - Windows: CREATE_NEW_PROCESS_GROUP so taskkill /T targets only daemon's tree.
+    detached: true,
+    windowsHide: true
   })
 
   daemonProcess.stdout?.on('data', (data) => {
@@ -139,9 +156,20 @@ async function startDaemon(): Promise<void> {
     console.error(`[daemon] ${data}`)
   })
 
+  // Prevent EPIPE from crashing Electron when daemon writes after we start quitting
+  daemonProcess.stdout?.on('error', () => { /* ignore broken pipe */ })
+  daemonProcess.stderr?.on('error', () => { /* ignore broken pipe */ })
+
   daemonProcess.on('error', (err) => {
     console.error(`[daemon] error:`, err)
   })
+
+  daemonProcess.on('exit', (code, signal) => {
+    console.log(`[daemon] exited with code=${code} signal=${signal}`)
+    daemonProcess = null
+  })
+
+  weSpawnedDaemon = true
 
   // Give daemon a moment to start
   await new Promise(r => setTimeout(r, 2000))
@@ -180,12 +208,46 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false
     },
-    titleBarStyle: 'hiddenInset',
-    backgroundColor: '#0d1117'
+    // hiddenInset is macOS-only; use default frame on other platforms
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' as const } : {}),
+    backgroundColor: '#0d1117',
+    show: false // Prevent flash; show once content is ready
+  })
+
+  // Show window once content has painted to avoid white/black flash
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show()
   })
 
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+
+  // Handle renderer crashes gracefully instead of leaving a black/white screen
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[electron] Renderer crashed:', details.reason)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.destroy()
+    }
+    if (!isQuitting) {
+      createWindow()
+    }
+  })
+
+  mainWindow.webContents.on('unresponsive', () => {
+    console.warn('[electron] Window unresponsive')
+    const response = dialog.showMessageBoxSync(mainWindow!, {
+      type: 'warning',
+      buttons: ['Wait', 'Reload', 'Close'],
+      title: 'Fleet Command Kanban',
+      message: 'The application is not responding.',
+      defaultId: 1
+    })
+    if (response === 1 && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.reload()
+    } else if (response === 2) {
+      app.quit()
+    }
   })
 
   // Set dock icon on macOS
@@ -235,43 +297,116 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('will-quit', () => {
-  // Kill daemon child process tree if we spawned one
-  if (daemonProcess && daemonProcess.pid) {
-    killProcessTree(daemonProcess.pid)
-  }
-
-  // Kill daemon via PID file (handles case where daemon was started externally)
-  try {
-    const pidFile = path.join(
-      process.env.USERPROFILE || process.env.HOME || '',
-      '.fleet-command',
-      'daemon.pid'
-    )
-    if (fs.existsSync(pidFile)) {
-      const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10)
-      if (pid) killProcessTree(pid)
-    }
-  } catch { /* ignore */ }
-
-  // Kill the parent process tree (pnpm start) to stop all sibling processes.
-  // ppid is the pnpm process that launched daemon + frontend + desktop in parallel.
-  try {
-    const ppid = process.ppid
-    if (ppid && ppid > 1) {
-      killProcessTree(ppid)
-    }
-  } catch { /* ignore */ }
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
-function killProcessTree(pid: number): void {
+app.on('will-quit', (event) => {
+  // Only clean up daemon processes that we spawned ourselves.
+  // NEVER kill parent process trees — on Windows this can kill explorer.exe
+  // and cause a system-wide black screen requiring a restart.
+  if (!weSpawnedDaemon) return
+
+  const pid = daemonProcess?.pid ?? getDaemonPidFromFile()
+  if (!pid || pid <= 1) return
+
+  // Graceful shutdown: send SIGTERM so the daemon can clean up its children
+  // (Claude PTY sessions, MCP proxies, system agents), close DB, remove PID file.
+  // The daemon has a 10-second internal shutdown timeout.
+  gracefulShutdownDaemon(pid)
+})
+
+/**
+ * Read daemon PID from its PID file as a fallback (e.g., if daemonProcess ref was lost).
+ */
+function getDaemonPidFromFile(): number | null {
+  try {
+    const homeDir = process.env.USERPROFILE || process.env.HOME || ''
+    const pidFile = path.join(homeDir, '.fleet-command', 'daemon.pid')
+    if (fs.existsSync(pidFile)) {
+      const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10)
+      if (pid && pid !== process.pid && pid !== process.ppid) return pid
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
+/**
+ * Graceful daemon shutdown sequence:
+ * 1. Send SIGTERM to the daemon's process group (daemon + all its children)
+ * 2. Wait briefly for graceful exit (daemon sends SIGTERM to Claude sessions internally)
+ * 3. Force kill anything still alive
+ *
+ * Because the daemon is spawned with detached:true, it has its own process group,
+ * so -pid targets exactly: daemon + Claude PTY sessions + MCP proxies.
+ */
+function gracefulShutdownDaemon(pid: number): void {
+  // Step 1: Graceful SIGTERM
+  if (process.platform === 'win32') {
+    // On Windows, taskkill without /F sends WM_CLOSE to GUI apps and
+    // CTRL_BREAK_EVENT to console apps, allowing graceful shutdown.
+    spawnSync('taskkill', ['/T', '/PID', String(pid)], {
+      stdio: 'ignore',
+      timeout: 3000
+    })
+  } else {
+    // On Unix, send SIGTERM to the entire process group (daemon is group leader
+    // because we spawned with detached:true which calls setsid).
+    try {
+      process.kill(-pid, 'SIGTERM')
+    } catch {
+      try { process.kill(pid, 'SIGTERM') } catch { /* already dead */ }
+    }
+  }
+
+  // Step 2: Wait up to 5 seconds for daemon to finish its graceful shutdown.
+  // The daemon internally waits up to 8s for Claude sessions to exit, but we
+  // give it 5s here — if it's still alive, we force kill.
+  if (isProcessAlive(pid)) {
+    const deadline = Date.now() + 5000
+    while (Date.now() < deadline && isProcessAlive(pid)) {
+      // Synchronous sleep: ping on Windows (timeout cmd needs a console),
+      // sleep on Unix. Window is already closed so blocking is fine.
+      if (process.platform === 'win32') {
+        spawnSync('ping', ['-n', '2', '127.0.0.1'], { stdio: 'ignore', timeout: 2000 })
+      } else {
+        spawnSync('sleep', ['0.5'], { stdio: 'ignore', timeout: 2000 })
+      }
+    }
+  }
+
+  // Step 3: Force kill any survivors
+  if (isProcessAlive(pid)) {
+    console.warn('[electron] Daemon still alive after graceful shutdown, force killing')
+    forceKillProcessTree(pid)
+  }
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    // signal 0 doesn't kill — just checks if process exists
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function forceKillProcessTree(pid: number): void {
+  if (!pid || pid <= 1) return
   try {
     if (process.platform === 'win32') {
-      // /T = kill entire process tree, /F = force
-      spawnSync('taskkill', ['/T', '/F', '/PID', String(pid)], { stdio: 'ignore' })
+      spawnSync('taskkill', ['/T', '/F', '/PID', String(pid)], {
+        stdio: 'ignore',
+        timeout: 5000
+      })
     } else {
-      // Kill process group on Unix
-      process.kill(-pid, 'SIGTERM')
+      // SIGKILL the entire process group
+      try {
+        process.kill(-pid, 'SIGKILL')
+      } catch {
+        try { process.kill(pid, 'SIGKILL') } catch { /* already dead */ }
+      }
     }
   } catch { /* already dead */ }
 }
