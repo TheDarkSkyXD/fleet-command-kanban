@@ -21,6 +21,9 @@ jobs:
             platform: linux
 
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout
