@@ -5,7 +5,7 @@ import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@fleet-command/shared'
 
 // Set app name for dock/taskbar (must be before app is ready)
-app.setName('Fleet Command')
+app.setName('Fleet Command Kanban')
 
 let daemonProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
