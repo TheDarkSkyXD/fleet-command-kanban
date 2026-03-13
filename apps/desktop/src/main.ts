@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
@@ -33,6 +33,16 @@ if (!gotTheLock) {
     }
   })
 }
+
+// Remove the application menu bar (File, Edit, View, etc.)
+Menu.setApplicationMenu(null)
+
+// Handle toggling dev tools from the renderer
+ipcMain.handle('toggle-devtools', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.toggleDevTools()
+  }
+})
 
 // Handle folder picker dialog
 ipcMain.handle('select-folder', async () => {
@@ -114,9 +124,10 @@ async function startDaemon(): Promise<void> {
   const daemonPath = path.join(daemonDir, 'bin', 'fleet-command.js')
   const nodeEnv = isDev ? 'development' : 'production'
 
-  // In production, use Electron's Node.js to ensure native module compatibility
-  // ELECTRON_RUN_AS_NODE makes Electron act as a regular Node.js process
-  const nodePath = isDev ? process.execPath : process.execPath
+  // In dev: use system Node.js so native modules (better-sqlite3) match.
+  // In production: use Electron's Node.js with ELECTRON_RUN_AS_NODE so
+  // native modules rebuilt for Electron work correctly.
+  const nodePath = isDev ? 'node' : process.execPath
   const env = isDev
     ? { ...process.env, NODE_ENV: nodeEnv }
     : { ...process.env, NODE_ENV: nodeEnv, ELECTRON_RUN_AS_NODE: '1' }
@@ -203,6 +214,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     icon: iconPath,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'index.cjs'),
       contextIsolation: true,
