@@ -39,6 +39,9 @@ function extractTitle(output: string): string | null {
  */
 export async function summarizeToTitle(text: string): Promise<string> {
   const claudePath = findClaudeBinary();
+  if (!claudePath) {
+    return "Untitled";
+  }
 
   const prompt = `Generate a 3-6 word title for the text below. OUTPUT THE TITLE ONLY. Nothing else. Violations: explanations/preamble/commentary = FAILED; fewer than 3 words = FAILED; more than 6 words = FAILED; quotes around title = FAILED; trailing punctuation = FAILED. Red flags that mean failure: "Let me explain...", "Here's a title:", "The title is:", any context. Just the title. 3-6 words. No quotes. No punctuation. Nothing else. TEXT: ${text}`;
 

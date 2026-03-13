@@ -68,6 +68,9 @@ export async function runSystemAgent<TInput>(
 
   // Find claude binary
   const claudePath = findClaudeBinary();
+  if (!claudePath) {
+    return { status: "failed", output: "Error: Claude CLI binary not found", exitCode: 1 };
+  }
 
   return new Promise((resolve) => {
     let outputBuffer = "";

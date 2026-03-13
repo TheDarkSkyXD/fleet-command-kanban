@@ -10,7 +10,8 @@ export function useClaudeStatus() {
     queryKey: ['claude-status'],
     queryFn: api.getClaudeStatus,
     staleTime: 60_000, // Check at most once per minute
-    retry: false,
+    retry: 3, // Retry on failure (daemon might still be starting)
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
   })
 }
 

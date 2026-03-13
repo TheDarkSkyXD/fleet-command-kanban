@@ -344,6 +344,9 @@ async function spawnArtifactChatSession(
   ];
 
   const claudePath = findClaudeBinary();
+  if (!claudePath) {
+    throw new Error("Claude CLI binary not found");
+  }
 
   const proc = pty.spawn(claudePath, args, {
     name: "xterm-256color",

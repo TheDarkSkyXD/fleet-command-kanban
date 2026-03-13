@@ -10,6 +10,7 @@ import { DEFAULT_PORT } from "@fleet-command/shared";
 import { eventBus } from "../utils/event-bus.js";
 import { formatListenUrls } from "../utils/listen-urls.js";
 import { Logger } from "../utils/logger.js";
+import { getClaudeStatus } from "../utils/claude-path.js";
 import { SessionService } from "../services/session/index.js";
 import { chatService } from "../services/chat.service.js";
 import { TelegramProvider } from "../providers/telegram/telegram.provider.js";
@@ -584,48 +585,11 @@ export async function main(): Promise<void> {
     });
   });
 
-  // Claude CLI status check
-  app.get("/api/claude-status", async (_req, res) => {
+  // Claude CLI status check (cached — avoids repeated slow spawnSync calls)
+  app.get("/api/claude-status", (_req, res) => {
     try {
-      const { findClaudeBinary, getClaudeSpawnEnv } = await import("../utils/claude-path.js");
-      const claudePath = findClaudeBinary();
-      const cleanEnv = getClaudeSpawnEnv();
-
-      // Check version - use spawnSync to avoid shell quoting issues with Windows paths
-      const { spawnSync } = await import("child_process");
-      let version: string | null = null;
-      try {
-        const vResult = spawnSync(claudePath, ["--version"], { encoding: "utf-8", timeout: 5000, env: cleanEnv });
-        if (vResult.status !== 0) {
-          res.json({ installed: false, authenticated: false, version: null, email: null });
-          return;
-        }
-        version = vResult.stdout.trim();
-      } catch (err) {
-        console.error("[claude-status] Version check failed:", (err as Error).message);
-        res.json({ installed: false, authenticated: false, version: null, email: null });
-        return;
-      }
-
-      // Check auth status
-      let authenticated = false;
-      let email: string | null = null;
-      try {
-        const aResult = spawnSync(claudePath, ["auth", "status"], { encoding: "utf-8", timeout: 5000, env: cleanEnv });
-        if (aResult.status === 0 && aResult.stdout) {
-          const authData = JSON.parse(aResult.stdout.trim());
-          authenticated = authData.loggedIn === true;
-          email = authData.email || null;
-        } else {
-          // CLI exists and runs --version, so it's installed and likely authed
-          authenticated = true;
-        }
-      } catch {
-        // Auth check format may differ — if version works, assume installed+authed
-        authenticated = true;
-      }
-
-      res.json({ installed: true, authenticated, version, email });
+      const forceRefresh = _req.query.refresh === "true";
+      res.json(getClaudeStatus(forceRefresh));
     } catch (err) {
       console.error("[claude-status] Error:", (err as Error).message);
       res.json({ installed: false, authenticated: false, version: null, email: null });

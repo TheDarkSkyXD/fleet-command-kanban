@@ -396,6 +396,9 @@ export class SessionService {
     args.push("--print", prompt);
 
     const claudePath = findClaudeBinary();
+    if (!claudePath) {
+      throw new Error("Claude CLI binary not found");
+    }
     console.log(`[spawnClaudeSession] Spawning ${agentType} at: ${claudePath}`);
 
     const proc = pty.spawn(claudePath, args, {
@@ -730,6 +733,9 @@ export class SessionService {
     args.push("--print", fullPrompt);
 
     const claudePath = findClaudeBinary();
+    if (!claudePath) {
+      throw new Error("Claude CLI binary not found");
+    }
 
     const proc = pty.spawn(claudePath, args, {
       name: "xterm-256color",
