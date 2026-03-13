@@ -42,6 +42,10 @@ export class TerminalManager {
         ...process.env,
         TERM: "xterm-256color",
       } as Record<string, string>,
+      // On Windows, ConPTY's console list agent crashes when the daemon is
+      // spawned without a console (e.g. from Electron with windowsHide:true).
+      // Falling back to WinPTY avoids "AttachConsole failed" errors.
+      useConpty: process.platform !== "win32",
     });
 
     const session: TerminalSession = {
