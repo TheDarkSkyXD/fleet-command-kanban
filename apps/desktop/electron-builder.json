@@ -27,6 +27,10 @@
     {
       "from": "build/icon.png",
       "to": "icon.png"
+    },
+    {
+      "from": "build/icon.ico",
+      "to": "icon.ico"
     }
   ],
   "afterPack": "./scripts/copy-native-modules.cjs",
@@ -44,7 +48,8 @@
     "installerIcon": "build/icon.ico",
     "uninstallerIcon": "build/icon.ico",
     "installerHeaderIcon": "build/icon.ico",
-    "shortcutName": "Fleet Command Kanban"
+    "shortcutName": "Fleet Command Kanban",
+    "include": "build/installer.nsh"
   },
   "linux": {
     "target": ["AppImage"],

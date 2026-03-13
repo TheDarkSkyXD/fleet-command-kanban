@@ -1,8 +1,12 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@fleet-command/shared'
+
+const GITHUB_OWNER = 'TheDarkSkyXD'
+const GITHUB_REPO = 'fleet-command-kanban'
+const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
 // Set app name for dock/taskbar (must be before app is ready)
 app.setName('Fleet Command Kanban')
@@ -53,6 +57,112 @@ ipcMain.handle('select-folder', async () => {
     return null
   }
   return result.filePaths[0]
+})
+
+// --- Update Checker ---
+
+interface GitHubRelease {
+  tag_name: string
+  name: string
+  body: string
+  html_url: string
+  published_at: string
+  assets: Array<{ name: string; browser_download_url: string }>
+}
+
+let updateCheckTimer: ReturnType<typeof setInterval> | null = null
+
+function parseVersion(tag: string): string {
+  return tag.replace(/^v/, '')
+}
+
+function isNewerVersion(remote: string, local: string): boolean {
+  const r = remote.split('.').map(Number)
+  const l = local.split('.').map(Number)
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    const rv = r[i] || 0
+    const lv = l[i] || 0
+    if (rv > lv) return true
+    if (rv < lv) return false
+  }
+  return false
+}
+
+async function fetchLatestRelease(): Promise<GitHubRelease | null> {
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
+      {
+        headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'FleetCommandKanban' }
+      }
+    )
+    if (!response.ok) return null
+    return await response.json() as GitHubRelease
+  } catch {
+    return null
+  }
+}
+
+async function checkForUpdate(): Promise<{
+  available: boolean
+  currentVersion: string
+  latestVersion?: string
+  releaseName?: string
+  releaseNotes?: string
+  releaseUrl?: string
+  publishedAt?: string
+}> {
+  const currentVersion = app.getVersion()
+  const release = await fetchLatestRelease()
+  if (!release) {
+    return { available: false, currentVersion }
+  }
+  const latestVersion = parseVersion(release.tag_name)
+  const available = isNewerVersion(latestVersion, currentVersion)
+  return {
+    available,
+    currentVersion,
+    latestVersion,
+    releaseName: release.name || release.tag_name,
+    releaseNotes: release.body || '',
+    releaseUrl: release.html_url,
+    publishedAt: release.published_at
+  }
+}
+
+function startUpdateChecker() {
+  // Do initial check after a short delay so the window is ready
+  setTimeout(async () => {
+    const result = await checkForUpdate()
+    if (result.available && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-available', result)
+    }
+  }, 10_000)
+
+  // Periodic checks
+  updateCheckTimer = setInterval(async () => {
+    const result = await checkForUpdate()
+    if (result.available && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-available', result)
+    }
+  }, UPDATE_CHECK_INTERVAL_MS)
+}
+
+// IPC: Get current app version
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion()
+})
+
+// IPC: Manual check for update
+ipcMain.handle('check-for-update', async () => {
+  return await checkForUpdate()
+})
+
+// IPC: Open release page in browser
+ipcMain.handle('open-release-url', (_event, url: string) => {
+  if (url && url.startsWith('https://github.com/')) {
+    shell.openExternal(url)
+  }
 })
 
 async function isDaemonRunning(): Promise<boolean> {
@@ -177,6 +287,10 @@ async function startDaemon(): Promise<void> {
 
   daemonProcess.on('exit', (code, signal) => {
     console.log(`[daemon] exited with code=${code} signal=${signal}`)
+    // If daemon exited quickly (e.g. "already running"), we didn't really spawn it
+    if (code !== 0) {
+      weSpawnedDaemon = false
+    }
     daemonProcess = null
   })
 
@@ -184,10 +298,16 @@ async function startDaemon(): Promise<void> {
 
   // Give daemon a moment to start
   await new Promise(r => setTimeout(r, 2000))
+
+  // If daemon exited during the wait (e.g. lock conflict), clear the flag
+  if (!daemonProcess) {
+    weSpawnedDaemon = false
+  }
 }
 
 async function waitForHealth(): Promise<boolean> {
-  const maxAttempts = 30
+  // In dev, the daemon may be compiling (tsc) before starting, so allow up to 60s
+  const maxAttempts = 120
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const response = await fetch(`http://localhost:${DEFAULT_PORT}/health`)
@@ -203,12 +323,14 @@ async function waitForHealth(): Promise<boolean> {
 function createWindow() {
   const isDev = !app.isPackaged || process.env.NODE_ENV === 'development'
 
-  // Icon path differs between dev and prod
+  // Icon path differs between dev and prod, and by platform
+  // Windows needs .ico for proper Task Manager / taskbar icon display
   // Dev: __dirname is apps/desktop/out/main/, icon is in apps/desktop/build/
   // Prod: icon is bundled with the app
+  const iconExt = process.platform === 'win32' ? 'ico' : 'png'
   const iconPath = isDev
-    ? path.join(__dirname, '..', '..', 'build', 'icon.png')
-    : path.join(process.resourcesPath, 'icon.png')
+    ? path.join(__dirname, '..', '..', 'build', `icon.${iconExt}`)
+    : path.join(process.resourcesPath, `icon.${iconExt}`)
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -282,6 +404,15 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  // Refresh Windows icon cache on launch so Task Manager shows the correct icon
+  if (process.platform === 'win32') {
+    try {
+      spawn('ie4uinit.exe', ['-show'], { detached: true, stdio: 'ignore' }).unref()
+    } catch {
+      // Non-critical, ignore
+    }
+  }
+
   try {
     await startDaemon()
     const healthy = await waitForHealth()
@@ -291,6 +422,7 @@ app.whenReady().then(async () => {
       return
     }
     createWindow()
+    startUpdateChecker()
   } catch (err) {
     dialog.showErrorBox('Startup Error', String(err))
     app.quit()
@@ -311,6 +443,10 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  if (updateCheckTimer) {
+    clearInterval(updateCheckTimer)
+    updateCheckTimer = null
+  }
 })
 
 app.on('will-quit', (event) => {
