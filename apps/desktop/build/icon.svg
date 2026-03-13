@@ -1,32 +1,61 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Background -->
-  <rect width="512" height="512" rx="100" fill="#161b22"/>
-
-  <!-- Inner glow/gradient background -->
-  <rect x="40" y="40" width="432" height="432" rx="80" fill="url(#bgGradient)"/>
-
-  <!-- Definitions -->
   <defs>
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1e2530;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0d1117;stop-opacity:1" />
+      <stop offset="0%" stop-color="#1e2530"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="shield-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="100%" stop-color="#2f81d4"/>
+    </linearGradient>
+    <linearGradient id="shield-fill-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#58a6ff"/>
+      <stop offset="60%" stop-color="#1a4a7a"/>
+      <stop offset="100%" stop-color="#0d2844"/>
+    </linearGradient>
+    <linearGradient id="chevron-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8ec5ff"/>
+      <stop offset="100%" stop-color="#58a6ff"/>
     </linearGradient>
   </defs>
 
-  <!-- Potato (centered and scaled) -->
-  <g transform="translate(256, 256) scale(12)">
-    <!-- Motion lines -->
-    <line x1="-15" y1="-2" x2="-11" y2="-2" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
-    <line x1="-16" y1="1" x2="-12" y2="1" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-    <line x1="-14" y1="4" x2="-10" y2="4" stroke="#58a6ff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="#161b22"/>
+  <rect x="40" y="40" width="432" height="432" rx="80" fill="url(#bgGradient)"/>
 
-    <!-- Potato body -->
-    <ellipse cx="0" cy="0" rx="11" ry="9" fill="#7eb8e8" stroke="#4a8bc7" stroke-width="0.8"/>
+  <!-- Shield / badge shape - solid blue fill for visibility -->
+  <path d="M256 52 L420 112 L420 268 C420 370 350 444 256 480 C162 444 92 370 92 268 L92 112 Z"
+        fill="url(#shield-fill-grad)" opacity="0.85" stroke="#58a6ff" stroke-width="7"/>
 
-    <!-- Potato spots -->
-    <circle cx="-4" cy="-3" r="1.5" fill="#4a8bc7" opacity="0.6"/>
-    <circle cx="3" cy="-5" r="1" fill="#4a8bc7" opacity="0.6"/>
-    <circle cx="-2" cy="3" r="1.2" fill="#4a8bc7" opacity="0.6"/>
-    <circle cx="5" cy="1" r="0.8" fill="#4a8bc7" opacity="0.6"/>
-  </g>
+  <!-- Inner shield outline -->
+  <path d="M256 74 L402 128 L402 264 C402 352 338 420 256 452 C174 420 110 352 110 264 L110 128 Z"
+        fill="none" stroke="#58a6ff" stroke-width="3" opacity="0.9"/>
+
+  <!-- Fleet chevrons (3 stacked, representing fleet formation) -->
+  <!-- Top chevron (leader) -->
+  <path d="M256 150 L316 206 L256 206 L196 206 Z"
+        fill="url(#chevron-grad)" opacity="1"/>
+  <path d="M256 150 L316 206" stroke="#8ec5ff" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M256 150 L196 206" stroke="#8ec5ff" stroke-width="6" stroke-linecap="round" fill="none"/>
+
+  <!-- Middle chevron -->
+  <path d="M256 218 L328 284" stroke="#58a6ff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M256 218 L184 284" stroke="#58a6ff" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Bottom chevron -->
+  <path d="M256 284 L340 360" stroke="#58a6ff" stroke-width="5.5" stroke-linecap="round" opacity="0.85"/>
+  <path d="M256 284 L172 360" stroke="#58a6ff" stroke-width="5.5" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Small dots representing fleet agents -->
+  <circle cx="256" cy="140" r="8" fill="#8ec5ff"/>
+  <circle cx="196" cy="206" r="5" fill="#58a6ff" opacity="0.9"/>
+  <circle cx="316" cy="206" r="5" fill="#58a6ff" opacity="0.9"/>
+  <circle cx="172" cy="284" r="4" fill="#58a6ff" opacity="0.8"/>
+  <circle cx="340" cy="284" r="4" fill="#58a6ff" opacity="0.8"/>
+  <circle cx="152" cy="360" r="3" fill="#58a6ff" opacity="0.6"/>
+  <circle cx="360" cy="360" r="3" fill="#58a6ff" opacity="0.6"/>
+
+  <!-- Command star at center -->
+  <path d="M256 228 L261 242 L276 242 L264 250 L268 264 L256 256 L244 264 L248 250 L236 242 L251 242 Z"
+        fill="#8ec5ff" opacity="1"/>
 </svg>

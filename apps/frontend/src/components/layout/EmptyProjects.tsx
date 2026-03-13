@@ -11,13 +11,13 @@ export function EmptyProjects() {
         <div className="brand-logo__icon">
           <svg viewBox="0 0 32 32" style={{ width: 48, height: 48 }}>
             <path d="M16 2 L28 7 L28 17 C28 24 22 29 16 31 C10 29 4 24 4 17 L4 7 Z" fill="rgba(96,165,250,0.15)" stroke="#60A5FA" strokeWidth="1.5" />
-            <path d="M16 8 L22 14" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
-            <path d="M16 8 L10 14" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 8 L22 14" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 8 L10 14" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" />
             <path d="M16 14 L23 21" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M16 14 L9 21" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M16 20 L24 28" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
             <path d="M16 20 L8 28" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
-            <circle cx="16" cy="7" r="2" fill="#F59E0B" />
+            <circle cx="16" cy="7" r="2" fill="#58a6ff" />
           </svg>
         </div>
         <div className="brand-logo__text">
