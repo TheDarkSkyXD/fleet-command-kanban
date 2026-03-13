@@ -47,7 +47,7 @@ export interface Project {
   wipLimits?: Record<string, number>;
   branchPrefix?: string;  // Custom branch prefix (default: 'fleet')
   ticketPrefix?: string;  // Custom ticket ID prefix (e.g., 'STR' for STR-1, STR-2)
-  agentName?: string;  // Custom agent display name in chat (default: 'Potato')
+  agentName?: string;  // Custom agent display name in chat (default: 'COO')
   folderId?: string | null;  // FK to folders table
 }
 

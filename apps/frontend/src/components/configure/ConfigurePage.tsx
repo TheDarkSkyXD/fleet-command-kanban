@@ -273,14 +273,15 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
         {/* Agent Name */}
         <SettingsSection
           title="Agent Name"
-          description="The display name for the AI agent in brainstorm chats. Defaults to 'Potato' if empty."
+          description="The display name for the AI agent in brainstorm chats. Defaults to 'COO' if empty."
         >
           <Input
             value={agentName}
             onChange={(e) => setAgentName(e.target.value)}
             onBlur={handleAgentNameBlur}
             onKeyDown={handleAgentNameKeyDown}
-            placeholder="Potato"
+            placeholder="COO"
+            maxLength={10}
             className="max-w-md"
           />
         </SettingsSection>
@@ -297,6 +298,7 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
               onBlur={handleTicketPrefixBlur}
               onKeyDown={handleTicketPrefixKeyDown}
               placeholder={defaultTicketPrefix}
+              maxLength={3}
               className="max-w-md uppercase"
             />
             {ticketPrefixError ? (

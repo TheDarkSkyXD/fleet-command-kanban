@@ -33,7 +33,7 @@ export function BrainstormChat({
   projectId,
   brainstormId,
   brainstormName,
-  agentName = 'Potato',
+  agentName = 'COO',
   initialMessage,
   onBack,
   onDelete
@@ -435,7 +435,7 @@ interface MessageBubbleProps {
   agentName?: string
 }
 
-function MessageBubble({ message, agentName = 'Potato' }: MessageBubbleProps) {
+function MessageBubble({ message, agentName = 'COO' }: MessageBubbleProps) {
   const isUser = message.type === 'user'
   const isError = message.type === 'error'
   const isQuestion = message.type === 'question'

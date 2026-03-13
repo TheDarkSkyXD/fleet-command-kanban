@@ -412,7 +412,7 @@ function MessageBubble({ message, onArtifactClick }: MessageBubbleProps) {
         {isQuestion && (
           <div className="flex items-center gap-2 mb-2 text-text-muted">
             <Bot className="h-3 w-3" />
-            <span className="text-xs font-medium">Potato</span>
+            <span className="text-xs font-medium">COO</span>
           </div>
         )}
         {isNotification && (
