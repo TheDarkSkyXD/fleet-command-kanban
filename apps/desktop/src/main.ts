@@ -3,9 +3,8 @@ import path from 'path'
 import fs from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@fleet-command/shared'
+import { autoUpdater } from 'electron-updater'
 
-const GITHUB_OWNER = 'TheDarkSkyXD'
-const GITHUB_REPO = 'fleet-command-kanban'
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
 // Set app name for dock/taskbar (must be before app is ready)
@@ -59,92 +58,62 @@ ipcMain.handle('select-folder', async () => {
   return result.filePaths[0]
 })
 
-// --- Update Checker ---
-
-interface GitHubRelease {
-  tag_name: string
-  name: string
-  body: string
-  html_url: string
-  published_at: string
-  assets: Array<{ name: string; browser_download_url: string }>
-}
+// --- Auto Updater (electron-updater) ---
 
 let updateCheckTimer: ReturnType<typeof setInterval> | null = null
 
-function parseVersion(tag: string): string {
-  return tag.replace(/^v/, '')
-}
+function setupAutoUpdater() {
+  // Don't auto-download; let the user click "Install"
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = true
 
-function isNewerVersion(remote: string, local: string): boolean {
-  const r = remote.split('.').map(Number)
-  const l = local.split('.').map(Number)
-  for (let i = 0; i < Math.max(r.length, l.length); i++) {
-    const rv = r[i] || 0
-    const lv = l[i] || 0
-    if (rv > lv) return true
-    if (rv < lv) return false
-  }
-  return false
-}
+  autoUpdater.on('update-available', (info) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.webContents.send('update-available', {
+      available: true,
+      currentVersion: app.getVersion(),
+      latestVersion: info.version,
+      releaseName: info.releaseName || `v${info.version}`,
+      releaseNotes: typeof info.releaseNotes === 'string'
+        ? info.releaseNotes
+        : Array.isArray(info.releaseNotes)
+          ? info.releaseNotes.map((n: any) => n.note).join('\n')
+          : '',
+      releaseDate: info.releaseDate
+    })
+  })
 
-async function fetchLatestRelease(): Promise<GitHubRelease | null> {
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
-      {
-        headers: { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'FleetCommandKanban' }
-      }
-    )
-    if (!response.ok) return null
-    return await response.json() as GitHubRelease
-  } catch {
-    return null
-  }
-}
+  autoUpdater.on('download-progress', (progress) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.webContents.send('update-download-progress', {
+      percent: progress.percent,
+      bytesPerSecond: progress.bytesPerSecond,
+      transferred: progress.transferred,
+      total: progress.total
+    })
+  })
 
-async function checkForUpdate(): Promise<{
-  available: boolean
-  currentVersion: string
-  latestVersion?: string
-  releaseName?: string
-  releaseNotes?: string
-  releaseUrl?: string
-  publishedAt?: string
-}> {
-  const currentVersion = app.getVersion()
-  const release = await fetchLatestRelease()
-  if (!release) {
-    return { available: false, currentVersion }
-  }
-  const latestVersion = parseVersion(release.tag_name)
-  const available = isNewerVersion(latestVersion, currentVersion)
-  return {
-    available,
-    currentVersion,
-    latestVersion,
-    releaseName: release.name || release.tag_name,
-    releaseNotes: release.body || '',
-    releaseUrl: release.html_url,
-    publishedAt: release.published_at
-  }
+  autoUpdater.on('update-downloaded', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.webContents.send('update-downloaded')
+  })
+
+  autoUpdater.on('error', (err) => {
+    console.error('[updater] Error:', err.message)
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.webContents.send('update-error', err.message)
+  })
 }
 
 function startUpdateChecker() {
-  // Do initial check after a short delay so the window is ready
-  setTimeout(async () => {
-    const result = await checkForUpdate()
-    if (result.available && mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-available', result)
-    }
+  // Initial check after a short delay so the window is ready
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {})
   }, 10_000)
 
   // Periodic checks
-  updateCheckTimer = setInterval(async () => {
-    const result = await checkForUpdate()
-    if (result.available && mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('update-available', result)
-    }
+  updateCheckTimer = setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {})
   }, UPDATE_CHECK_INTERVAL_MS)
 }
 
@@ -155,14 +124,23 @@ ipcMain.handle('get-app-version', () => {
 
 // IPC: Manual check for update
 ipcMain.handle('check-for-update', async () => {
-  return await checkForUpdate()
+  const result = await autoUpdater.checkForUpdates()
+  if (!result) return { available: false, currentVersion: app.getVersion() }
+  return {
+    available: result.updateInfo.version !== app.getVersion(),
+    currentVersion: app.getVersion(),
+    latestVersion: result.updateInfo.version
+  }
 })
 
-// IPC: Open release page in browser
-ipcMain.handle('open-release-url', (_event, url: string) => {
-  if (url && url.startsWith('https://github.com/')) {
-    shell.openExternal(url)
-  }
+// IPC: Start downloading the update
+ipcMain.handle('download-update', async () => {
+  await autoUpdater.downloadUpdate()
+})
+
+// IPC: Install the downloaded update (quit and install)
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall()
 })
 
 async function isDaemonRunning(): Promise<boolean> {
@@ -422,6 +400,7 @@ app.whenReady().then(async () => {
       return
     }
     createWindow()
+    setupAutoUpdater()
     startUpdateChecker()
   } catch (err) {
     dialog.showErrorBox('Startup Error', String(err))

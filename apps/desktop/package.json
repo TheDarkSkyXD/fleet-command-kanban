@@ -25,6 +25,7 @@
   "dependencies": {
     "@fleet-command/daemon": "workspace:*",
     "better-sqlite3": "^12.6.2",
+    "electron-updater": "^6.8.3",
     "node-pty": "^1.1.0"
   },
   "devDependencies": {

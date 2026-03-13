@@ -6,6 +6,11 @@
   "directories": {
     "output": "release"
   },
+  "publish": {
+    "provider": "github",
+    "owner": "TheDarkSkyXD",
+    "repo": "fleet-command-kanban"
+  },
   "npmRebuild": false,
   "files": [
     "out/**/*"
