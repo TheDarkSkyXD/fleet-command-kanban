@@ -38,7 +38,7 @@ export function useAddProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; branchPrefix?: string; ticketPrefix?: string; folderId?: string | null } }) =>
+    mutationFn: ({ id, updates }: { id: string; updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; wipLimits?: Record<string, number> | null; branchPrefix?: string; ticketPrefix?: string; folderId?: string | null } }) =>
       api.updateProject(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
@@ -46,18 +46,27 @@ export function useUpdateProject() {
   })
 }
 
-export function useToggleDisabledPhase() {
+export function useProjectBranch(projectId: string | null) {
+  return useQuery({
+    queryKey: ['project-branch', projectId],
+    queryFn: () => api.getProjectBranch(projectId!),
+    enabled: !!projectId,
+    staleTime: 30_000,
+  })
+}
+
+export function useToggleAutomatedPhase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({
       projectId,
       phaseId,
-      disabled
+      automated
     }: {
       projectId: string
       phaseId: string
-      disabled: boolean
-    }) => api.toggleDisabledPhase(projectId, phaseId, disabled),
+      automated: boolean
+    }) => api.toggleAutomatedPhase(projectId, phaseId, automated),
     onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       queryClient.invalidateQueries({ queryKey: ['tickets', projectId] })
@@ -161,7 +170,7 @@ export function useUpdateTicket() {
     }: {
       projectId: string
       ticketId: string
-      updates: Partial<Ticket>
+      updates: Partial<Ticket> & { force?: boolean }
     }) => api.updateTicket(projectId, ticketId, updates),
     onSuccess: (_, { projectId, ticketId }) => {
       queryClient.invalidateQueries({ queryKey: ['tickets', projectId] })
@@ -457,6 +466,89 @@ export function useDeleteAgentOverride() {
     onSuccess: (_, { projectId }) => {
       // Invalidate all phase workers queries for this project to refresh hasOverride
       queryClient.invalidateQueries({ queryKey: ['phaseWorkers', projectId] })
+    }
+  })
+}
+
+// ─── Dev Server ─────────────────────────────────────────────
+
+export function useDevServerStatus(projectId: string | null) {
+  return useQuery({
+    queryKey: ['devServerStatus', projectId],
+    queryFn: () => api.getDevServerStatus(projectId!),
+    enabled: !!projectId,
+    refetchInterval: 5000
+  })
+}
+
+export function useDevServerConfig(projectId: string | null) {
+  return useQuery({
+    queryKey: ['devServerConfig', projectId],
+    queryFn: () => api.getDevServerConfig(projectId!),
+    enabled: !!projectId
+  })
+}
+
+export function useStartDevServer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, command }: { projectId: string; command?: string }) =>
+      api.startDevServer(projectId, command),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['devServerStatus', projectId] })
+    }
+  })
+}
+
+export function useStopDevServer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (projectId: string) => api.stopDevServer(projectId),
+    onSuccess: (_, projectId) => {
+      queryClient.invalidateQueries({ queryKey: ['devServerStatus', projectId] })
+    }
+  })
+}
+
+// ─── Terminals ──────────────────────────────────────────────
+
+export function useTerminals(projectId: string | null) {
+  return useQuery({
+    queryKey: ['terminals', projectId],
+    queryFn: () => api.listTerminals(projectId!),
+    enabled: !!projectId
+  })
+}
+
+export function useCreateTerminal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, name }: { projectId: string; name?: string }) =>
+      api.createTerminal(projectId, name),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['terminals', projectId] })
+    }
+  })
+}
+
+export function useRenameTerminal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, terminalId, name }: { projectId: string; terminalId: string; name: string }) =>
+      api.renameTerminal(projectId, terminalId, name),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['terminals', projectId] })
+    }
+  })
+}
+
+export function useDeleteTerminal() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ projectId, terminalId }: { projectId: string; terminalId: string }) =>
+      api.deleteTerminal(projectId, terminalId),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['terminals', projectId] })
     }
   })
 }

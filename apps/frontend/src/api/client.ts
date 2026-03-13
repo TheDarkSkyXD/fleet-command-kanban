@@ -72,17 +72,22 @@ export const api = {
       method: 'DELETE'
     }),
 
-  updateProject: (id: string, updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; branchPrefix?: string; ticketPrefix?: string; agentName?: string; folderId?: string | null }) =>
+  updateProject: (id: string, updates: { displayName?: string; icon?: string; color?: string; swimlaneColors?: Record<string, string>; wipLimits?: Record<string, number> | null; branchPrefix?: string; ticketPrefix?: string; agentName?: string; folderId?: string | null }) =>
     request<Project>(`/api/projects/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(updates)
     }),
 
-  toggleDisabledPhase: (projectId: string, phaseId: string, disabled: boolean) =>
-    request<Project>(`/api/projects/${encodeURIComponent(projectId)}/disabled-phases`, {
+  toggleAutomatedPhase: (projectId: string, phaseId: string, automated: boolean) =>
+    request<Project>(`/api/projects/${encodeURIComponent(projectId)}/automated-phases`, {
       method: 'PATCH',
-      body: JSON.stringify({ phaseId, disabled })
+      body: JSON.stringify({ phaseId, automated })
     }),
+
+  getProjectBranch: (projectId: string) =>
+    request<{ currentBranch: string | null; branches: string[] }>(
+      `/api/projects/${encodeURIComponent(projectId)}/git-branch`
+    ),
 
   // ============ Folders ============
 
@@ -124,7 +129,7 @@ export const api = {
       body: JSON.stringify({ title, description })
     }),
 
-  updateTicket: (projectId: string, ticketId: string, updates: Partial<Ticket>) =>
+  updateTicket: (projectId: string, ticketId: string, updates: Partial<Ticket> & { force?: boolean }) =>
     request<Ticket>(`/api/tickets/${encodeURIComponent(projectId)}/${ticketId}`, {
       method: 'PUT',
       body: JSON.stringify(updates)
@@ -458,6 +463,76 @@ export const api = {
   deleteAgentOverride: (projectId: string, agentType: string) =>
     request<{ ok: true }>(
       `/api/projects/${encodeURIComponent(projectId)}/agents/${encodeURIComponent(agentType)}/override`,
+      { method: 'DELETE' }
+    ),
+
+  // Dev Server
+  getDevServerStatus: (projectId: string) =>
+    request<import('@fleet-command/shared').DevServerState>(
+      `/api/projects/${encodeURIComponent(projectId)}/devserver/status`
+    ),
+
+  startDevServer: (projectId: string, command?: string) =>
+    request<import('@fleet-command/shared').DevServerState>(
+      `/api/projects/${encodeURIComponent(projectId)}/devserver/start`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ command })
+      }
+    ),
+
+  stopDevServer: (projectId: string) =>
+    request<{ success: boolean }>(
+      `/api/projects/${encodeURIComponent(projectId)}/devserver/stop`,
+      { method: 'POST' }
+    ),
+
+  getDevServerConfig: (projectId: string) =>
+    request<import('@fleet-command/shared').DevServerConfig>(
+      `/api/projects/${encodeURIComponent(projectId)}/devserver/config`
+    ),
+
+  updateDevServerConfig: (projectId: string, customCommand: string | null) =>
+    request<{ success: boolean }>(
+      `/api/projects/${encodeURIComponent(projectId)}/devserver/config`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ customCommand })
+      }
+    ),
+
+  getDevServerLogs: (projectId: string) =>
+    request<import('@fleet-command/shared').DevServerLogEntry[]>(
+      `/api/projects/${encodeURIComponent(projectId)}/devserver/logs`
+    ),
+
+  // Terminals
+  listTerminals: (projectId: string) =>
+    request<import('@fleet-command/shared').TerminalInfo[]>(
+      `/api/terminal/${encodeURIComponent(projectId)}`
+    ),
+
+  createTerminal: (projectId: string, name?: string) =>
+    request<import('@fleet-command/shared').TerminalInfo>(
+      `/api/terminal/${encodeURIComponent(projectId)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ name })
+      }
+    ),
+
+  renameTerminal: (projectId: string, terminalId: string, name: string) =>
+    request<{ success: boolean }>(
+      `/api/terminal/${encodeURIComponent(projectId)}/${encodeURIComponent(terminalId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ name })
+      }
+    ),
+
+  deleteTerminal: (projectId: string, terminalId: string) =>
+    request<{ success: boolean }>(
+      `/api/terminal/${encodeURIComponent(projectId)}/${encodeURIComponent(terminalId)}`,
       { method: 'DELETE' }
     ),
 }

@@ -13,6 +13,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { useProjects } from '@/hooks/queries'
 import { useAppStore } from '@/stores/appStore'
 import { getProjectIcon } from '@/components/configure/ProjectIconPicker'
+import { DebugPanel } from '@/components/debug-panel/DebugPanel'
 
 const SUBPAGE_LABELS: Record<string, string> = {
   board: 'Board',
@@ -137,6 +138,7 @@ function RootLayout() {
           <TicketDetailPanel />
           <BrainstormDetailPanel />
         </div>
+        <DebugPanel projectId={currentProject?.id ?? null} />
         {hasProjects && <MobileBottomBar />}
       </SidebarInset>
       <AddTicketModal />

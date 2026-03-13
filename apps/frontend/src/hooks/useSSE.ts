@@ -22,6 +22,8 @@ type SSEEventType =
   | 'log:entry'
   | 'processing:sync'
   | 'folder:updated'
+  | 'devserver:output'
+  | 'devserver:status'
 
 interface SSEEventData {
   [key: string]: unknown
@@ -104,6 +106,7 @@ export function useSSE() {
       eventSource.addEventListener('session:ended', (e) => {
         queryClient.refetchQueries({ queryKey: ['sessions'] })
         queryClient.refetchQueries({ queryKey: ['tickets'] })
+        queryClient.refetchQueries({ queryKey: ['brainstorms'] })
         // Clear processing state for this ticket
         try {
           const data = JSON.parse(e.data) as SSEEventData
@@ -215,6 +218,29 @@ export function useSSE() {
       // Task update events - refetch all task queries
       eventSource.addEventListener('ticket:task-updated', () => {
         queryClient.refetchQueries({ queryKey: ['tasks'] })
+      })
+
+      // Dev server events
+      eventSource.addEventListener('devserver:status', (e) => {
+        try {
+          const data = JSON.parse(e.data) as SSEEventData
+          const { projectId } = data as { projectId?: string }
+          if (projectId) {
+            queryClient.invalidateQueries({ queryKey: ['devServerStatus', projectId] })
+          }
+          window.dispatchEvent(new CustomEvent('sse:devserver-status', { detail: data }))
+        } catch {
+          // Ignore parse errors
+        }
+      })
+
+      eventSource.addEventListener('devserver:output', (e) => {
+        try {
+          const data = JSON.parse(e.data) as SSEEventData
+          window.dispatchEvent(new CustomEvent('sse:devserver-output', { detail: data }))
+        } catch {
+          // Ignore parse errors
+        }
       })
     }
 
