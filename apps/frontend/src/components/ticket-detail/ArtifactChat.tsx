@@ -96,7 +96,7 @@ export function ArtifactChat({
           }
         ]
       })
-      setPendingOptions(options || [])
+      setPendingOptions(Array.isArray(options) ? options : [])
       setIsWaitingForResponse(false)
     }
   }, [contextId]))

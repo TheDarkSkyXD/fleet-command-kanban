@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDroppable } from '@dnd-kit/core'
-import { Archive, Plus, ToggleLeft, ToggleRight, Settings2, RotateCcw } from 'lucide-react'
+import { Archive, Plus, Bot, Settings2, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/appStore'
 import { IconButton } from '@/components/ui/icon-button'
@@ -18,12 +18,15 @@ interface BoardColumnProps {
   tickets: Ticket[]
   projectId: string
   showAddTicket?: boolean
-  isManualPhase?: boolean
-  isDisabled?: boolean
+  canAutomate?: boolean
+  isAutomated?: boolean
   isMigrating?: boolean
-  onToggleDisabled?: () => void
+  onToggleAutomated?: () => void
   swimlaneColor?: string
   onColorChange?: (color: string | null) => void
+  phaseDescription?: string
+  wipLimit?: number
+  onWipLimitChange?: (limit: number | null) => void
 }
 
 export function BoardColumn({
@@ -31,12 +34,15 @@ export function BoardColumn({
   tickets,
   projectId,
   showAddTicket,
-  isManualPhase,
-  isDisabled,
+  canAutomate,
+  isAutomated,
   isMigrating,
-  onToggleDisabled,
+  onToggleAutomated,
   swimlaneColor,
-  onColorChange
+  onColorChange,
+  phaseDescription,
+  wipLimit,
+  onWipLimitChange
 }: BoardColumnProps) {
   const openAddTicketModal = useAppStore((s) => s.openAddTicketModal)
   const showArchivedTickets = useAppStore((s) => s.showArchivedTickets)
@@ -53,8 +59,8 @@ export function BoardColumn({
   // Determine tooltip text
   const getTooltipText = () => {
     if (isMigrating) return 'Migration in progress...'
-    if (isDisabled) return 'Enable checkpoint - items will stop here'
-    return 'Skip checkpoint - items will pass through automatically'
+    if (isAutomated) return phaseDescription ?? 'Automated'
+    return phaseDescription ?? 'Enable automation'
   }
 
   const handleColorChange = (color: string | null) => {
@@ -66,27 +72,80 @@ export function BoardColumn({
     ? { backgroundColor: swimlaneColor }
     : undefined
 
+  // WIP limit badge display
+  const renderTicketCount = () => {
+    if (wipLimit) {
+      const isOver = tickets.length > wipLimit
+      const isAtLimit = tickets.length === wipLimit
+      return (
+        <span className={cn(
+          'text-xs px-2 py-0.5 rounded-[10px]',
+          isOver && 'bg-accent-red/20 text-accent-red',
+          isAtLimit && 'bg-accent-yellow/20 text-accent-yellow',
+          !isOver && !isAtLimit && 'bg-bg-tertiary text-text-muted'
+        )}>
+          {tickets.length}/{wipLimit}
+        </span>
+      )
+    }
+    return (
+      <span className="text-text-muted text-xs bg-bg-tertiary px-2 py-0.5 rounded-[10px]">
+        {tickets.length}
+      </span>
+    )
+  }
+
   return (
     <div
       className={cn(
-        'swimlane-flip-container flex-shrink-0 w-[280px] md:w-[320px] h-full group',
-        isDisabled && 'opacity-50'
+        'swimlane-flip-container flex-shrink-0 w-[280px] md:w-[320px] h-full group'
       )}
     >
       {/* Inner wrapper that rotates */}
       <div className={cn('swimlane-flip-inner h-full', isFlipped && 'flipped')}>
         {/* Front face - normal swimlane view */}
         <div
-          className="swimlane-front bg-bg-secondary rounded-lg flex flex-col"
+          className={cn(
+            'swimlane-front bg-bg-secondary rounded-lg flex flex-col',
+            isAutomated && 'opacity-60'
+          )}
           style={columnBackgroundStyle}
         >
+          {/* Currently Automated Banner */}
+          {isAutomated && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border-b border-accent/20 rounded-t-lg">
+              <Bot className="h-3 w-3 text-accent" />
+              <span className="text-xs text-accent font-medium">Currently Automated</span>
+            </div>
+          )}
+
           {/* Column Header */}
           <div className="flex items-center justify-between p-3 border-b border-border">
-            <h3 className="text-text-secondary font-semibold text-[13px]">{phase}</h3>
             <div className="flex items-center gap-2">
-              <span className="text-text-muted text-xs bg-bg-tertiary px-2 py-0.5 rounded-[10px]">
-                {tickets.length}
-              </span>
+              {canAutomate && onToggleAutomated && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <IconButton
+                      tooltip=""
+                      onClick={onToggleAutomated}
+                      disabled={isMigrating}
+                      className={cn(isMigrating && 'cursor-not-allowed opacity-50')}
+                    >
+                      <Bot className={cn(
+                        'h-4 w-4',
+                        isAutomated ? 'text-accent' : 'text-text-muted'
+                      )} />
+                    </IconButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">{getTooltipText()}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <h3 className="text-text-secondary font-semibold text-[13px]">{phase}</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {renderTicketCount()}
               {phase === 'Done' && (
                 <IconButton
                   tooltip={showArchivedTickets ? 'Hide archived' : 'View archived'}
@@ -97,27 +156,6 @@ export function BoardColumn({
                 >
                   <Archive className="h-4 w-4" />
                 </IconButton>
-              )}
-              {isManualPhase && onToggleDisabled && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <IconButton
-                      tooltip=""
-                      onClick={onToggleDisabled}
-                      disabled={isMigrating}
-                      className={cn(isMigrating && 'cursor-not-allowed opacity-50')}
-                    >
-                      {isDisabled ? (
-                        <ToggleLeft className="h-4 w-4 text-text-muted" />
-                      ) : (
-                        <ToggleRight className="h-4 w-4 text-accent" />
-                      )}
-                    </IconButton>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">{getTooltipText()}</p>
-                  </TooltipContent>
-                </Tooltip>
               )}
               {showAddTicket && (
                 <IconButton tooltip="Create new ticket" onClick={openAddTicketModal}>
@@ -159,6 +197,8 @@ export function BoardColumn({
             phase={phase}
             currentColor={swimlaneColor}
             onColorChange={handleColorChange}
+            wipLimit={wipLimit}
+            onWipLimitChange={onWipLimitChange}
           />
         </div>
       </div>

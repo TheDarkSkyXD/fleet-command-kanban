@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn, timeAgo, formatToolActivity } from '@/lib/utils'
 import { Linkify } from '@/components/ui/linkify'
 import { ArtifactViewerFull } from './ArtifactViewerFull'
-import { TaskList } from './TaskList'
+import { CollapsibleTaskPanel } from './CollapsibleTaskPanel'
 import { RestartPhaseButton } from './RestartPhaseButton'
 import type { Artifact, TicketHistoryEntry } from '@fleet-command/shared'
 import { useSessionOutput, useTicketMessage, useSessionEnded } from '@/hooks/useSSE'
@@ -63,7 +63,7 @@ export function ActivityTab({ projectId, ticketId, currentPhase: propPhase, hist
   const pendingOptions = useMemo(() => {
     if (!messages.length) return []
     const lastMessage = messages[messages.length - 1]
-    if (lastMessage.type === 'question' && lastMessage.options) {
+    if (lastMessage.type === 'question' && Array.isArray(lastMessage.options)) {
       return lastMessage.options
     }
     return []
@@ -250,7 +250,7 @@ export function ActivityTab({ projectId, ticketId, currentPhase: propPhase, hist
                 Loading conversation...
               </div>
             )}
-            {!isLoadingHistory && messages.length === 0 && !isWaitingForResponse && (
+            {!isLoadingHistory && messages.length === 0 && !isWaitingForResponse && !currentActivity && (
               <div className="text-center py-8 text-text-muted text-sm">
                 No messages yet
               </div>
@@ -294,6 +294,15 @@ export function ActivityTab({ projectId, ticketId, currentPhase: propPhase, hist
           </div>
         )}
 
+        {/* Task Panel - inside chat section */}
+        {currentPhase && (
+          <CollapsibleTaskPanel
+            projectId={projectId}
+            ticketId={ticketId}
+            currentPhase={currentPhase}
+          />
+        )}
+
         {/* Input area */}
         <div className="py-3 border-t border-border shrink-0">
           <div className="flex gap-2 px-4">
@@ -324,15 +333,6 @@ export function ActivityTab({ projectId, ticketId, currentPhase: propPhase, hist
           </p>
         </div>
       </div>
-
-      {/* Task List - only renders when tasks exist */}
-      {currentPhase && (
-        <TaskList
-          projectId={projectId}
-          ticketId={ticketId}
-          currentPhase={currentPhase}
-        />
-      )}
 
       {/* Artifact Viewer Modal */}
       <ArtifactViewerFull

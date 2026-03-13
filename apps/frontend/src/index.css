@@ -1069,6 +1069,10 @@ button, a, [role="button"] {
   opacity: 0;
 }
 
+.wip-input:focus-visible {
+  outline: none;
+}
+
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .swimlane-flip-inner {

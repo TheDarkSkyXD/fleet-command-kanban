@@ -1,12 +1,12 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { LayoutDashboard, SlidersHorizontal, Terminal } from 'lucide-react'
+import { LayoutDashboard, SlidersHorizontal, Terminal, GitBranch } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useClaudeStatus } from '@/hooks/queries'
+import { useClaudeStatus, useProjectBranch } from '@/hooks/queries'
 
 function ClaudeStatusIndicator() {
   const { data: status, isLoading, isError } = useClaudeStatus()
@@ -82,6 +82,24 @@ function DevToolsToggle() {
   )
 }
 
+function BranchIndicator({ projectId }: { projectId: string }) {
+  const { data } = useProjectBranch(projectId)
+
+  if (!data?.currentBranch) return null
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-text-muted">
+          <GitBranch className="h-3 w-3" />
+          <span className="max-w-[120px] truncate">{data.currentBranch}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{data.currentBranch}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function ViewTabs() {
   const location = useLocation()
 
@@ -115,6 +133,7 @@ export function ViewTabs() {
         </TooltipTrigger>
         <TooltipContent>An AI Assisted Kanban board</TooltipContent>
       </Tooltip>
+      <BranchIndicator projectId={projectId} />
       <ClaudeStatusIndicator />
       <DevToolsToggle />
       <Tooltip>

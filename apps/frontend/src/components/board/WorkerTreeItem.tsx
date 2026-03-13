@@ -16,7 +16,7 @@ export function WorkerTreeItem({
   isLastChild,
   onAgentClick
 }: WorkerTreeItemProps) {
-  const isAgent = node.type === 'agent'
+  const isAgent = node.type === 'agent' || node.type === 'answerBot'
   const isLoop = node.type === 'ralphLoop' || node.type === 'taskLoop'
 
   // Format display name from agentType or id

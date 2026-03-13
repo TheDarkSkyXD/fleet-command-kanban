@@ -61,8 +61,8 @@ const mockProjects = [
     color: undefined,
     branchPrefix: undefined,
     swimlaneColors: {},
-    disabledPhases: [],
-    disabledPhaseMigration: false,
+    automatedPhases: [],
+    automatedPhaseMigration: false,
   },
   {
     id: 'proj-2',
@@ -74,8 +74,8 @@ const mockProjects = [
     color: undefined,
     branchPrefix: undefined,
     swimlaneColors: {},
-    disabledPhases: [],
-    disabledPhaseMigration: false,
+    automatedPhases: [],
+    automatedPhaseMigration: false,
   },
   {
     id: 'proj-3',
@@ -87,8 +87,8 @@ const mockProjects = [
     color: undefined,
     branchPrefix: undefined,
     swimlaneColors: {},
-    disabledPhases: [],
-    disabledPhaseMigration: false,
+    automatedPhases: [],
+    automatedPhaseMigration: false,
   },
 ]
 

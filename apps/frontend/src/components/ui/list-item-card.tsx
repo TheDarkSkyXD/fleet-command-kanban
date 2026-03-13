@@ -10,6 +10,8 @@ interface ListItemCardProps extends React.HTMLAttributes<HTMLDivElement> {
   isActive?: boolean
   /** Tint color from parent container - card will be a lighter version */
   tintColor?: string
+  /** Selection styling intensity: 'default' for subtle, 'bold' for prominent */
+  selectedVariant?: 'default' | 'bold'
 }
 
 /**
@@ -21,6 +23,7 @@ export function ListItemCard({
   isSelected,
   isActive,
   tintColor,
+  selectedVariant = 'default',
   className,
   children,
   style,
@@ -28,13 +31,29 @@ export function ListItemCard({
 }: ListItemCardProps) {
   const Comp = asChild ? Slot : 'div'
 
-  // Create a lighter background based on the tint color
+  // Blend accent into tint when selected (fixes inline style specificity)
   const cardStyle = tintColor
     ? {
         ...style,
-        backgroundColor: `color-mix(in srgb, ${tintColor} 60%, #3a3a3c)`
+        backgroundColor: isSelected
+          ? `color-mix(in srgb, var(--color-accent) 20%, color-mix(in srgb, ${tintColor} 60%, #3a3a3c))`
+          : `color-mix(in srgb, ${tintColor} 60%, #3a3a3c)`
       }
     : style
+
+  // Selection classes (only applied when no tintColor, since tintColor uses inline style for bg)
+  const selectedClasses = isSelected && !tintColor && (
+    selectedVariant === 'bold'
+      ? 'border-accent/50 bg-accent/15 ring-1 ring-accent/20'
+      : 'border-accent/30 bg-accent/10'
+  )
+
+  // Border/ring classes always apply regardless of tintColor (no conflict with inline backgroundColor)
+  const selectedBorderClasses = isSelected && tintColor && (
+    selectedVariant === 'bold'
+      ? 'border-accent/50 ring-1 ring-accent/20'
+      : 'border-accent/30'
+  )
 
   return (
     <Comp
@@ -42,8 +61,9 @@ export function ListItemCard({
         'rounded-lg p-3 cursor-pointer transition-all',
         'border border-white/10 hover:border-white/20',
         'shadow-md shadow-black/30',
-        !tintColor && 'bg-bg-tertiary',
-        isSelected && 'border-accent/30 bg-accent/10',
+        !tintColor && !isSelected && 'bg-bg-tertiary',
+        selectedClasses,
+        selectedBorderClasses,
         isActive && 'opacity-50 shadow-lg',
         className
       )}

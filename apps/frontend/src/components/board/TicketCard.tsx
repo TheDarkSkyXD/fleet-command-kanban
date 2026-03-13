@@ -9,6 +9,11 @@ import { useArchiveTicket } from '@/hooks/queries'
 import { ListItemCard } from '@/components/ui/list-item-card'
 import { IconButton } from '@/components/ui/icon-button'
 import { ArchiveConfirmDialog, shouldShowArchiveWarning } from '@/components/ticket-detail/ArchiveConfirmDialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 import type { Ticket } from '@fleet-command/shared'
 
 interface TicketCardProps {
@@ -23,6 +28,8 @@ export function TicketCard({ ticket, projectId, swimlaneColor }: TicketCardProps
   const activity = useAppStore((s) => s.getTicketActivity(projectId, ticket.id))
   const isPending = useAppStore((s) => s.isTicketPending(projectId, ticket.id))
   const isArchiving = useAppStore((s) => s.isTicketArchiving(projectId, ticket.id))
+  const ticketSheetTicketId = useAppStore((s) => s.ticketSheetTicketId)
+  const isSelected = ticketSheetTicketId === ticket.id
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
   const archiveTicket = useArchiveTicket()
 
@@ -85,6 +92,8 @@ export function TicketCard({ ticket, projectId, swimlaneColor }: TicketCardProps
     <ListItemCard
       asChild
       isActive={isDragging}
+      isSelected={isSelected}
+      selectedVariant="bold"
       tintColor={swimlaneColor}
     >
       <div
@@ -119,6 +128,22 @@ export function TicketCard({ ticket, projectId, swimlaneColor }: TicketCardProps
             ?
           </span>
         </div>
+      )}
+
+      {/* Pending phase indicator - ticket waiting for WIP space */}
+      {ticket.pendingPhase && !isPending && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="absolute top-1.5 right-1.5 z-10">
+              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400">
+                <Clock className="h-3 w-3" />
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p className="text-xs">Waiting for {ticket.pendingPhase}</p>
+          </TooltipContent>
+        </Tooltip>
       )}
 
       {/* Ticket ID */}
