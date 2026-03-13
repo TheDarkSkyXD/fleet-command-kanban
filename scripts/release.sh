@@ -21,12 +21,6 @@ if [[ "${2:-}" == "--dry-run" ]]; then
   DRY_RUN=true
 fi
 
-# --- Ensure clean working tree ---
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Error: Working tree is not clean. Commit or stash changes first."
-  exit 1
-fi
-
 # --- Ensure on main branch ---
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "$BRANCH" != "main" ]]; then
@@ -52,6 +46,14 @@ echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION ($BUMP_TYPE)"
 if $DRY_RUN; then
   echo "[dry-run] Would update package.json files, commit, tag $TAG, and push."
   exit 0
+fi
+
+# --- Commit any pending changes ---
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "Staging and committing pending changes..."
+  git add -A
+  git commit -m "chore: pre-release changes for $NEW_VERSION"
+  echo "Committed pending changes"
 fi
 
 # --- Bump version in all package.json files ---
