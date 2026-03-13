@@ -1,12 +1,12 @@
 {
   "name": "fleet-command-monorepo",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "private": true,
   "license": "SEE LICENSE IN LICENSE.md",
   "type": "module",
   "scripts": {
-    "rebuild:node": "pnpm install --force && pnpm run fix:node-pty",
-    "rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
+    "rebuild:node": "node scripts/rebuild-native.cjs node && pnpm run fix:node-pty",
+    "rebuild:electron": "node scripts/rebuild-native.cjs electron",
     "start": "pnpm --parallel --filter @fleet-command/daemon --filter @fleet-command/frontend --filter @fleet-command/desktop dev",
     "build": "pnpm -r build && pnpm run fix:node-pty",
     "fix:node-pty": "chmod +x node_modules/.pnpm/node-pty@*/node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper 2>/dev/null || true",
