@@ -148,7 +148,7 @@ export function registerBrainstormRoutes(
       }
 
       // Write response file for session to pick up
-      await writeResponse(projectId, brainstormId, { answer: message });
+      writeResponse(projectId, brainstormId, { answer: message });
 
       // Save user message to conversation store (askAsync doesn't wait, so we save here)
       const brainstorm = await getBrainstorm(projectId, brainstormId);
@@ -235,7 +235,7 @@ export function registerBrainstormRoutes(
       const projectId = decodeURIComponent(req.params.project);
       const brainstormId = req.params.id;
 
-      const question = await readQuestion(projectId, brainstormId);
+      const question = readQuestion(projectId, brainstormId);
 
       res.json({ question });
     } catch (error) {

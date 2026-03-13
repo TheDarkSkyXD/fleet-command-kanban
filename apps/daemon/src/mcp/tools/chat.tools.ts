@@ -80,10 +80,18 @@ export const chatHandlers: Record<
     // All contexts use async flow — session suspends after asking.
     // The worker executor detects the pending question on exit and preserves state.
     // When the user responds, a new session resumes with --resume.
+    // Normalize options: Claude sometimes sends a JSON string instead of an array
+    let options: string[] | undefined;
+    if (Array.isArray(args.options)) {
+      options = args.options as string[];
+    } else if (typeof args.options === 'string') {
+      try { options = JSON.parse(args.options); } catch { options = undefined; }
+    }
+
     await chatService.askAsync(
       toContext(ctx),
       args.question as string,
-      args.options as string[] | undefined,
+      options,
       args.phase as string | undefined
     );
     return {

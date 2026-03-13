@@ -7,11 +7,13 @@ import type {
   AgentWorker,
   RalphLoopWorker,
   TaskLoopWorker,
+  AnswerBotWorker,
 } from "../../types/template.types.js";
 import {
   isAgentWorker,
   isRalphLoopWorker,
   isTaskLoopWorker,
+  isAnswerBotWorker,
 } from "../../types/template.types.js";
 import type {
   OrchestrationState,
@@ -40,9 +42,9 @@ import {
   handleTaskWorkersComplete,
   buildTaskContext,
 } from "./loops/task-loop.js";
-import { getPhaseConfig, getNextEnabledPhase } from "./phase-config.js";
+import { getPhaseConfig, getNextEnabledPhase, isPhaseAutomated } from "./phase-config.js";
 import { updateTicket } from "../../stores/ticket.store.js";
-import { readQuestion, clearQuestion } from "../../stores/chat.store.js";
+import { readQuestion, clearQuestion, type PendingQuestion } from "../../stores/chat.store.js";
 import { updateTaskStatus } from "../../stores/task.store.js";
 import { logToDaemon } from "./ticket-logger.js";
 import {
@@ -51,6 +53,23 @@ import {
   updateRalphFeedbackStatus,
   getRalphFeedbackForLoop,
 } from "../../stores/ralph-feedback.store.js";
+
+/**
+ * Filter out answerBot workers from sequential execution.
+ * AnswerBot workers are metadata — they are not executed sequentially
+ * but rather spawned on-demand when a pending question is detected.
+ */
+function getExecutableWorkers(workers: Worker[]): Worker[] {
+  return workers.filter(w => !isAnswerBotWorker(w));
+}
+
+/**
+ * Find the answerBot worker in a phase's workers array, if present.
+ */
+function getAnswerBotForPhase(phaseConfig: Phase): AnswerBotWorker | null {
+  const answerBot = phaseConfig.workers.find(w => isAnswerBotWorker(w));
+  return answerBot ? (answerBot as AnswerBotWorker) : null;
+}
 
 /**
  * Callbacks for spawning sessions and handling transitions
@@ -75,6 +94,14 @@ export interface ExecutorCallbacks {
     projectId: string,
     ticketId: string,
     reason: string
+  ) => Promise<void>;
+  spawnAnswerBot: (
+    projectId: string,
+    ticketId: string,
+    phase: TicketPhase,
+    projectPath: string,
+    answerBotWorker: AnswerBotWorker,
+    pendingQuestion: PendingQuestion,
   ) => Promise<void>;
 }
 
@@ -175,11 +202,12 @@ function getCurrentWorker(
   workers: Worker[],
   state: OrchestrationState
 ): { worker: Worker; path: string[] } | null {
-  if (state.workerIndex >= workers.length) {
+  const executable = getExecutableWorkers(workers);
+  if (state.workerIndex >= executable.length) {
     return null;
   }
 
-  const topWorker = workers[state.workerIndex];
+  const topWorker = executable[state.workerIndex];
 
   if (!state.activeWorker) {
     return { worker: topWorker, path: [topWorker.id] };
@@ -249,7 +277,7 @@ export async function startPhase(
 
   // Clear any stale pending question from a previous suspended session
   // This prevents a new phase execution from being misidentified as suspended on exit
-  await clearQuestion(projectId, ticketId);
+  clearQuestion(projectId, ticketId);
 
   // Validate phase
   validatePhaseWorkers(phaseConfig);
@@ -265,7 +293,7 @@ export async function startPhase(
     state = await initWorkerState(projectId, ticketId, phase);
   }
 
-  if (phaseConfig.workers.length === 0) {
+  if (getExecutableWorkers(phaseConfig.workers).length === 0) {
     console.log(`[WorkerExecutor] Phase ${phase} has no workers`);
     return null;
   }
@@ -452,8 +480,20 @@ export async function handleAgentCompletion(
   // A suspended session exits cleanly (code 0) after calling chat_ask with suspend: true.
   // We must NOT advance the worker tree — the session will resume when the user responds.
   if (exitCode === 0 && ticketId) {
-    const pendingQuestion = await readQuestion(projectId, ticketId);
+    const pendingQuestion = readQuestion(projectId, ticketId);
     if (pendingQuestion) {
+      const automated = await isPhaseAutomated(projectId, phase);
+      const answerBotWorker = getAnswerBotForPhase(phaseConfig);
+
+      if (automated && answerBotWorker) {
+        await logToDaemon(projectId, ticketId, `Phase automated — spawning answer bot`, {
+          agentId,
+          questionConversationId: pendingQuestion.conversationId,
+        });
+        await callbacks.spawnAnswerBot(projectId, ticketId, phase, projectPath, answerBotWorker, pendingQuestion);
+        return;
+      }
+
       await logToDaemon(projectId, ticketId, `Session suspended — awaiting user response`, {
         agentId,
         questionConversationId: pendingQuestion.conversationId,
@@ -526,7 +566,7 @@ async function processAgentCompletion(
     projectId,
     ticketId,
     phase,
-    phaseConfig.workers[state.workerIndex],
+    getExecutableWorkers(phaseConfig.workers)[state.workerIndex],
     state.activeWorker,
     exitCode,
     verdict,

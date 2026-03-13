@@ -11,6 +11,7 @@ export async function ensureWorktree(
   projectPath: string,
   ticketId: string,
   branchPrefix?: string,
+  overrideBaseBranch?: string,
 ): Promise<string> {
   const worktreesDir = path.join(projectPath, ".fleet-command", "worktrees");
   const worktreePath = path.join(worktreesDir, ticketId);
@@ -31,25 +32,29 @@ export async function ensureWorktree(
   await fs.mkdir(worktreesDir, { recursive: true });
 
   try {
-    // Get the default branch (main or master)
+    // Get the base branch: use override if provided, otherwise auto-detect
     let baseBranch: string;
-    try {
-      baseBranch = execSync("git symbolic-ref refs/remotes/origin/HEAD", {
-        cwd: projectPath,
-        encoding: "utf-8",
-      })
-        .trim()
-        .replace("refs/remotes/origin/", "");
-    } catch {
-      // Fallback: try main, then master
+    if (overrideBaseBranch) {
+      baseBranch = overrideBaseBranch;
+    } else {
       try {
-        execSync("git rev-parse --verify main", {
+        baseBranch = execSync("git symbolic-ref refs/remotes/origin/HEAD", {
           cwd: projectPath,
           encoding: "utf-8",
-        });
-        baseBranch = "main";
+        })
+          .trim()
+          .replace("refs/remotes/origin/", "");
       } catch {
-        baseBranch = "master";
+        // Fallback: try main, then master
+        try {
+          execSync("git rev-parse --verify main", {
+            cwd: projectPath,
+            encoding: "utf-8",
+          });
+          baseBranch = "main";
+        } catch {
+          baseBranch = "master";
+        }
       }
     }
 

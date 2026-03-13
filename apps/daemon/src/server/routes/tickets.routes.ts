@@ -22,6 +22,9 @@ import {
 } from "../../stores/ticket.store.js";
 import { DEFAULT_PHASES } from "../../types/index.js";
 import { readQuestion, writeResponse } from "../../stores/chat.store.js";
+import { getWipStatus } from "../../services/session/wip.js";
+import { chatService } from "../../services/chat.service.js";
+import { updateBrainstorm } from "../../stores/brainstorm.store.js";
 import { getActiveSessionForTicket } from "../../stores/session.store.js";
 import { getMessages } from "../../stores/conversation.store.js";
 import type { SessionService } from "../../services/session/index.js";
@@ -66,9 +69,10 @@ export function registerTicketRoutes(
   app.post("/api/tickets/:project", async (req: Request, res: Response) => {
     try {
       const projectId = decodeURIComponent(req.params.project);
-      const { title, description } = req.body as {
+      const { title, description, brainstormId } = req.body as {
         title?: string;
         description?: string;
+        brainstormId?: string;
       };
 
       if (!title) {
@@ -78,6 +82,21 @@ export function registerTicketRoutes(
 
       const ticket = await createTicket(projectId, { title, description });
       eventBus.emit("ticket:created", { projectId, ticket });
+
+      // Link brainstorm to created ticket
+      if (brainstormId) {
+        try {
+          const brainstorm = await updateBrainstorm(projectId, brainstormId, {
+            createdTicketId: ticket.id,
+          });
+          if (brainstorm) {
+            eventBus.emit('brainstorm:updated', { projectId, brainstorm });
+          }
+        } catch (err) {
+          console.error(`[createTicket] Failed to link brainstorm ${brainstormId}: ${(err as Error).message}`);
+        }
+      }
+
       res.json(ticket);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
@@ -101,28 +120,43 @@ export function registerTicketRoutes(
     try {
       const projectId = decodeURIComponent(req.params.project);
       const ticketId = req.params.id;
-      const updates = req.body as { phase?: TicketPhase; sessionId?: string };
+      const { force, ...ticketUpdates } = req.body as { phase?: TicketPhase; sessionId?: string; force?: boolean };
 
       const oldTicket = await getTicket(projectId, ticketId);
       const oldPhase = oldTicket.phase;
 
       // Resolve target phase if moving to a potentially disabled phase
-      let resolvedPhase = updates.phase;
-      if (updates.phase && updates.phase !== oldPhase) {
+      let resolvedPhase = ticketUpdates.phase;
+      if (ticketUpdates.phase && ticketUpdates.phase !== oldPhase) {
         resolvedPhase = (await resolveTargetPhase(
           projectId,
-          updates.phase,
+          ticketUpdates.phase,
         )) as TicketPhase;
-        if (resolvedPhase !== updates.phase) {
+        if (resolvedPhase !== ticketUpdates.phase) {
           console.log(
-            `[updateTicket] Phase ${updates.phase} is disabled, resolved to ${resolvedPhase}`,
+            `[updateTicket] Phase ${ticketUpdates.phase} is automated, resolved to ${resolvedPhase}`,
           );
         }
       }
 
+      // WIP limit check
+      if (resolvedPhase && resolvedPhase !== oldPhase && !force) {
+        const wipStatus = getWipStatus(projectId, resolvedPhase);
+        if (wipStatus.atLimit) {
+          res.status(409).json({
+            error: "WIP limit reached",
+            phase: resolvedPhase,
+            current: wipStatus.current,
+            limit: wipStatus.limit,
+          });
+          return;
+        }
+      }
+
       const ticket = await updateTicket(projectId, ticketId, {
-        ...updates,
+        ...ticketUpdates,
         phase: resolvedPhase,
+        ...(resolvedPhase && resolvedPhase !== oldPhase ? { pendingPhase: null } : {}),
       });
 
       eventBus.emit("ticket:updated", { projectId, ticket });
@@ -427,7 +461,7 @@ export function registerTicketRoutes(
         const projectId = decodeURIComponent(req.params.project);
         const ticketId = req.params.id;
 
-        const question = await readQuestion(projectId, ticketId);
+        const question = readQuestion(projectId, ticketId);
 
         res.json({ question });
       } catch (error) {
@@ -450,7 +484,7 @@ export function registerTicketRoutes(
           return;
         }
 
-        await writeResponse(projectId, ticketId, { answer: message });
+        writeResponse(projectId, ticketId, { answer: message });
 
         // Check if there's an active session for this ticket.
         // If not, this is a response to a suspended session — spawn a resumed session.
@@ -561,6 +595,38 @@ export function registerTicketRoutes(
         } else {
           res.status(500).json({ error: message });
         }
+      }
+    },
+  );
+
+  // Answer pending question for ticket (answer-bot)
+  app.post(
+    "/api/tickets/:project/:id/answer-question",
+    async (req: Request, res: Response) => {
+      try {
+        const projectId = decodeURIComponent(req.params.project);
+        const ticketId = req.params.id;
+        const { answer } = req.body as { answer?: string };
+
+        if (!answer) {
+          res.status(400).json({ error: "Missing answer" });
+          return;
+        }
+
+        const result = await chatService.handleResponse(
+          "answer-bot",
+          { projectId, ticketId },
+          answer,
+        );
+
+        if (!result) {
+          res.status(404).json({ error: "No pending question" });
+          return;
+        }
+
+        res.json({ success: true });
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
       }
     },
   );

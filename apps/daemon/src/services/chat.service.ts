@@ -21,6 +21,7 @@ import {
   createWaitController,
 } from "../stores/chat.store.js";
 import { appendTicketLog } from "../stores/ticket-log.store.js";
+import { getActiveSessionForTicket } from "../stores/session.store.js";
 import { eventBus } from "../utils/event-bus.js";
 import {
   addMessage,
@@ -131,7 +132,7 @@ export class ChatService {
     }
 
     // Write pending question for MCP sync (allows web UI to poll)
-    await writeQuestion(context.projectId, contextId, {
+    writeQuestion(context.projectId, contextId, {
       conversationId: questionMessageId || this.generateConversationId(),
       question,
       options: options || null,
@@ -270,13 +271,22 @@ export class ChatService {
       questionMessageId = message.id;
     }
 
+    // Look up the active session's claude_session_id for ticket contexts
+    // so resumeSuspendedTicket can use it directly instead of a fragile "latest" lookup.
+    let claudeSessionId: string | undefined;
+    if (context.ticketId) {
+      const activeSession = getActiveSessionForTicket(context.ticketId);
+      claudeSessionId = activeSession?.claudeSessionId;
+    }
+
     // Write pending question for IPC (allows session respawn to inject response)
-    await writeQuestion(context.projectId, contextId, {
+    writeQuestion(context.projectId, contextId, {
       conversationId: questionMessageId || this.generateConversationId(),
       question,
       options: options || null,
       askedAt: now,
       phase,
+      ...(claudeSessionId ? { claudeSessionId } : {}),
     });
 
     // Log the question
@@ -383,7 +393,7 @@ export class ChatService {
     answer: string,
   ): Promise<boolean> {
     // Check if question is still pending
-    const response = await readResponse(
+    const response = readResponse(
       context.projectId,
       this.getContextId(context),
     );
@@ -393,7 +403,7 @@ export class ChatService {
     }
 
     // Write response
-    await writeResponse(context.projectId, this.getContextId(context), {
+    writeResponse(context.projectId, this.getContextId(context), {
       answer,
     });
 

@@ -253,18 +253,18 @@ describe("ProjectStore", () => {
       });
     });
 
-    it("should update disabledPhases as JSON", () => {
+    it("should update automatedPhases as JSON", () => {
       const created = store.createProject({
         displayName: "Test",
         path: "/path",
       });
 
       store.updateProject(created.id, {
-        disabledPhases: ["Refinement", "Review"],
+        automatedPhases: ["Refinement", "Review"],
       });
 
       const project = store.getProjectById(created.id);
-      assert.deepStrictEqual(project?.disabledPhases, ["Refinement", "Review"]);
+      assert.deepStrictEqual(project?.automatedPhases, ["Refinement", "Review"]);
     });
 
     it("should update swimlaneColors as JSON", () => {

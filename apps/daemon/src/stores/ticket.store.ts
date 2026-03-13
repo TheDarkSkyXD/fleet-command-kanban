@@ -46,12 +46,14 @@ interface TicketRow {
   title: string;
   description: string;
   phase: string;
+  pending_phase: string | null;
   created_at: string;
   updated_at: string;
   archived: number;
   archived_at: string | null;
   conversation_id: string | null;
   worker_state: string | null;
+  base_branch: string | null;
 }
 
 interface HistoryRow {
@@ -226,9 +228,23 @@ export class TicketStore {
       values.push(updates.description);
     }
 
+    if (updates.pendingPhase !== undefined) {
+      fields.push("pending_phase = ?");
+      values.push(updates.pendingPhase || null);
+    }
+
+    if (updates.baseBranch !== undefined) {
+      fields.push("base_branch = ?");
+      values.push(updates.baseBranch || null);
+    }
+
     if (updates.phase !== undefined && updates.phase !== existing.phase) {
       fields.push("phase = ?");
       values.push(updates.phase);
+
+      // Clear pending_phase when phase actually changes
+      fields.push("pending_phase = ?");
+      values.push(null);
 
       // Close out the current history entry
       this.db
@@ -389,6 +405,19 @@ export class TicketStore {
   }
 
   // ---------------------------------------------------------------------------
+  // Phase Counting
+  // ---------------------------------------------------------------------------
+
+  countTicketsInPhase(projectId: string, phase: string): number {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) as count FROM tickets WHERE project_id = ? AND phase = ? AND archived = 0`
+      )
+      .get(projectId, phase) as { count: number };
+    return row.count;
+  }
+
+  // ---------------------------------------------------------------------------
   // Row Mappers
   // ---------------------------------------------------------------------------
 
@@ -407,6 +436,8 @@ export class TicketStore {
       archived: row.archived === 1,
       archivedAt: row.archived_at || undefined,
       conversationId: row.conversation_id || undefined,
+      pendingPhase: row.pending_phase || undefined,
+      baseBranch: row.base_branch || undefined,
     };
   }
 
@@ -572,6 +603,10 @@ export function getPhaseHistoryEntries(ticketId: string): Array<{ id: string; ph
 
 export function deleteHistoryEntries(historyIds: string[]): number {
   return new TicketStore(getDatabase()).deleteHistoryEntries(historyIds);
+}
+
+export function countTicketsInPhase(projectId: string, phase: string): number {
+  return new TicketStore(getDatabase()).countTicketsInPhase(projectId, phase);
 }
 
 // =============================================================================

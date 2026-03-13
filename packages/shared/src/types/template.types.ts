@@ -29,7 +29,7 @@ export interface TemplatePhase {
 
 export interface TemplateWorker {
   id: string
-  type: 'agent' | 'ralphLoop' | 'taskLoop'
+  type: 'agent' | 'ralphLoop' | 'taskLoop' | 'answerBot'
   description?: string
   source?: string
   workers?: TemplateWorker[]

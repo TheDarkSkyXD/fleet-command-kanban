@@ -43,7 +43,8 @@ import type {
   SessionLogEntry,
 } from "../../types/session.types.js";
 import type { TicketPhase } from "../../types/ticket.types.js";
-import type { AgentWorker } from "../../types/template.types.js";
+import type { PendingQuestion } from "../../stores/chat.store.js";
+import type { AgentWorker, AnswerBotWorker } from "../../types/template.types.js";
 import type { TaskContext } from "../../types/orchestration.types.js";
 
 import type { ActiveSession } from "./types.js";
@@ -52,6 +53,7 @@ import { getPhaseConfig, phaseRequiresWorktree, getNextEnabledPhase } from "./ph
 import { buildBrainstormPrompt, buildAgentPrompt } from "./prompts.js";
 import { tryLoadAgentDefinition } from "./agent-loader.js";
 import { resolveModel } from "./model-resolver.js";
+import { isPhaseAtWipLimit } from "./wip.js";
 import { logToDaemon, savePrompt } from "./ticket-logger.js";
 import {
   startPhase,
@@ -296,6 +298,7 @@ export class SessionService {
     additionalDisallowedTools?: string[],
     model?: string,
     claudeResumeSessionId?: string,
+    onExitOverride?: (exitCode: number) => void,
   ): string {
     // Save prompt for debugging (non-blocking)
     if (ticketId && phase) {
@@ -513,7 +516,9 @@ export class SessionService {
       this.eventEmitter.emit("session:ended", { sessionId, ...endMeta });
 
       // Handle agent completion via new executor
-      if (phase && ticketId) {
+      if (onExitOverride) {
+        onExitOverride(exitCode);
+      } else if (phase && ticketId) {
         handleAgentCompletion(
           projectId,
           ticketId,
@@ -609,8 +614,8 @@ export class SessionService {
 
     // Check for pending response from previous session
     let pendingContext: { question: string; response: string } | undefined;
-    const pendingResponse = await readResponse(projectId, brainstormId);
-    const pendingQuestion = await readQuestion(projectId, brainstormId);
+    const pendingResponse = readResponse(projectId, brainstormId);
+    const pendingQuestion = readQuestion(projectId, brainstormId);
 
     if (pendingResponse && pendingQuestion) {
       console.log(
@@ -621,8 +626,8 @@ export class SessionService {
         response: pendingResponse.answer,
       };
       // Clear the files so the new session doesn't also pick them up via waitForResponse
-      await clearResponse(projectId, brainstormId);
-      await clearQuestion(projectId, brainstormId);
+      clearResponse(projectId, brainstormId);
+      clearQuestion(projectId, brainstormId);
     }
 
     // Only build full prompt for first session; resumed sessions use --resume
@@ -870,7 +875,7 @@ export class SessionService {
 
     const needsWorktree = await phaseRequiresWorktree(projectId, phase);
     const worktreePath = needsWorktree
-      ? await ensureWorktree(projectPath, ticketId, branchPrefix)
+      ? await ensureWorktree(projectPath, ticketId, branchPrefix, ticket.baseBranch)
       : projectPath;
 
     // Load agent definition
@@ -932,6 +937,101 @@ export class SessionService {
   }
 
   /**
+   * Spawn an answer bot session to auto-respond to a pending question.
+   */
+  private async spawnAnswerBotWorker(
+    projectId: string,
+    ticketId: string,
+    phase: TicketPhase,
+    projectPath: string,
+    answerBotWorker: AnswerBotWorker,
+    pendingQuestion: PendingQuestion,
+  ): Promise<void> {
+    console.log(`[spawnAnswerBotWorker] Spawning ${answerBotWorker.source} for ticket ${ticketId}`);
+
+    const agentDefinition = await tryLoadAgentDefinition(projectId, answerBotWorker.source);
+    if (!agentDefinition) {
+      console.error(`[spawnAnswerBotWorker] Could not load agent: ${answerBotWorker.source}`);
+      return;
+    }
+
+    const options = Array.isArray(pendingQuestion.options) ? pendingQuestion.options : null;
+    const questionContext = [
+      "## Pending Question",
+      "",
+      `**Question:** ${pendingQuestion.question}`,
+      "",
+      options
+        ? `**Options:**\n${options.map((o: string, i: number) => `${i + 1}. ${o}`).join("\n")}`
+        : "*Free-form response expected*",
+    ].join("\n");
+
+    const fullPrompt = `${agentDefinition.prompt}\n\n${questionContext}`;
+    const resolvedModel = resolveModel(answerBotWorker.model);
+
+    const storedSession = createStoredSession({
+      projectId,
+      ticketId,
+      agentSource: answerBotWorker.source,
+      phase,
+    });
+    const sessionId = storedSession.id;
+
+    const meta: SessionMeta = {
+      projectId,
+      ticketId,
+      phase,
+      worktreePath: projectPath,
+      startedAt: new Date().toISOString(),
+      status: "running",
+      agentType: answerBotWorker.source,
+      stage: 0,
+    };
+
+    const onAnswerBotExit = (exitCode: number) => {
+      if (exitCode !== 0) return;
+
+      const waitForAnswer = async (): Promise<string> => {
+        for (let i = 0; i < 10; i++) {
+          const pending = readResponse(projectId, ticketId);
+          if (pending?.answer) return pending.answer;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+        return "(answered by answer bot)";
+      };
+
+      waitForAnswer()
+        .then((answerText) =>
+          this.resumeSuspendedTicket(projectId, ticketId, answerText)
+        )
+        .then((newSessionId) => {
+          console.log(`[spawnAnswerBotWorker] Resumed original session ${newSessionId} after answer bot`);
+        })
+        .catch((err) => {
+          console.error(`[spawnAnswerBotWorker] Failed to resume suspended ticket: ${(err as Error).message}`);
+        });
+    };
+
+    this.spawnClaudeSession(
+      sessionId,
+      meta,
+      fullPrompt,
+      projectPath,
+      projectId,
+      ticketId,
+      "",
+      answerBotWorker.source,
+      phase,
+      projectPath,
+      0,
+      undefined,
+      resolvedModel ?? undefined,
+      undefined,
+      onAnswerBotExit,
+    );
+  }
+
+  /**
    * Resume a suspended ticket session after user responds.
    * Mirrors spawnForBrainstorm's resume pattern:
    * - Reads pending context for conversation injection
@@ -953,37 +1053,42 @@ export class SessionService {
     // Safety: terminate any lingering session for this ticket
     await this.terminateExistingSession("ticket", ticketId);
 
-    // Get the Claude session ID from the most recent session for --resume
-    const claudeSessionId = getLatestClaudeSessionIdForTicket(ticketId);
+    // Read pending question and get Claude session ID for --resume
+    const pendingQuestion = readQuestion(projectId, ticketId);
+    const claudeSessionId = pendingQuestion?.claudeSessionId || getLatestClaudeSessionIdForTicket(ticketId);
     if (!claudeSessionId) {
       throw new Error(`No Claude session ID found for ticket ${ticketId} — cannot resume`);
     }
 
     // Mark the pending question as answered in conversation store
     if (ticket.conversationId) {
-      const { answerQuestion, getPendingQuestion, addMessage } = await import(
+      const { answerQuestion, getPendingQuestion: getConvPendingQuestion, addMessage } = await import(
         "../../stores/conversation.store.js"
       );
-      const pendingQuestion = getPendingQuestion(ticket.conversationId);
-      if (pendingQuestion) {
-        answerQuestion(pendingQuestion.id);
+      const convPendingQuestion = getConvPendingQuestion(ticket.conversationId);
+      if (convPendingQuestion) {
+        answerQuestion(convPendingQuestion.id);
       }
-      addMessage(ticket.conversationId, {
-        type: "user",
-        text: userResponse,
-      });
+      if (pendingQuestion) {
+        addMessage(ticket.conversationId, {
+          type: "user",
+          text: userResponse,
+        });
+      }
     }
 
     // Clear pending files
-    await clearQuestion(projectId, ticketId);
-    await clearResponse(projectId, ticketId);
+    clearQuestion(projectId, ticketId);
+    clearResponse(projectId, ticketId);
 
-    // Emit SSE event for the user's response
-    eventBus.emit("ticket:message", {
-      projectId,
-      ticketId,
-      message: { type: "user", text: userResponse, timestamp: new Date().toISOString() },
-    });
+    // Emit SSE event for the user's response (only if there was a pending question, to avoid duplicates from answer bot)
+    if (pendingQuestion) {
+      eventBus.emit("ticket:message", {
+        projectId,
+        ticketId,
+        message: { type: "user", text: userResponse, timestamp: new Date().toISOString() },
+      });
+    }
 
     // Create stored session record
     const storedSession = createStoredSession({
@@ -997,7 +1102,7 @@ export class SessionService {
     const branchPrefix = project.branchPrefix || "fleet";
     const needsWorktree = await phaseRequiresWorktree(projectId, ticket.phase);
     const worktreePath = needsWorktree
-      ? await ensureWorktree(project.path, ticketId, branchPrefix)
+      ? await ensureWorktree(project.path, ticketId, branchPrefix, ticket.baseBranch)
       : project.path;
 
     const meta: SessionMeta = {
@@ -1041,6 +1146,7 @@ export class SessionService {
   private getExecutorCallbacks(): ExecutorCallbacks {
     return {
       spawnAgent: this.spawnAgentWorker.bind(this),
+      spawnAnswerBot: this.spawnAnswerBotWorker.bind(this),
       onPhaseComplete: this.handlePhaseTransition.bind(this),
       onTicketBlocked: this.handleTicketBlocked.bind(this),
     };
@@ -1058,6 +1164,16 @@ export class SessionService {
     const nextPhase = await getNextEnabledPhase(projectId, completedPhase);
     if (!nextPhase) {
       console.log(`[handlePhaseTransition] No next phase after ${completedPhase}`);
+      return;
+    }
+
+    if (isPhaseAtWipLimit(projectId, nextPhase)) {
+      await updateTicket(projectId, ticketId, { pendingPhase: nextPhase });
+      console.log(
+        `[handlePhaseTransition] WIP limit reached for ${nextPhase}, ticket ${ticketId} queued`
+      );
+      const queuedTicket = getTicket(projectId, ticketId);
+      eventBus.emit("ticket:updated", { projectId, ticket: queuedTicket });
       return;
     }
 

@@ -1,6 +1,6 @@
 export interface WorkerNode {
   id: string
-  type: 'agent' | 'ralphLoop' | 'taskLoop'
+  type: 'agent' | 'ralphLoop' | 'taskLoop' | 'answerBot'
   description?: string
   agentType?: string
   model?: string

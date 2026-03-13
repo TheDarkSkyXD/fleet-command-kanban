@@ -1,7 +1,7 @@
 // src/types/template.types.ts
 
 // Worker types
-export type WorkerType = "agent" | "ralphLoop" | "taskLoop";
+export type WorkerType = "agent" | "ralphLoop" | "taskLoop" | "answerBot";
 
 export interface BaseWorker {
   id: string;
@@ -23,6 +23,12 @@ export interface AgentWorker extends BaseWorker {
   model?: ModelSpec;
 }
 
+export interface AnswerBotWorker extends BaseWorker {
+  type: "answerBot";
+  source: string;
+  model?: ModelSpec;
+}
+
 export interface RalphLoopWorker extends BaseWorker {
   type: "ralphLoop";
   maxAttempts: number;
@@ -35,7 +41,7 @@ export interface TaskLoopWorker extends BaseWorker {
   workers: Worker[]; // Cannot contain TaskLoopWorker
 }
 
-export type Worker = AgentWorker | RalphLoopWorker | TaskLoopWorker;
+export type Worker = AgentWorker | AnswerBotWorker | RalphLoopWorker | TaskLoopWorker;
 
 // Phase types
 export interface Transitions {
@@ -90,4 +96,8 @@ export function isRalphLoopWorker(worker: Worker): worker is RalphLoopWorker {
 
 export function isTaskLoopWorker(worker: Worker): worker is TaskLoopWorker {
   return worker.type === "taskLoop";
+}
+
+export function isAnswerBotWorker(worker: Worker): worker is AnswerBotWorker {
+  return worker.type === "answerBot";
 }

@@ -68,7 +68,8 @@
       "oneOf": [
         { "$ref": "#/$defs/agentWorker" },
         { "$ref": "#/$defs/ralphLoopWorker" },
-        { "$ref": "#/$defs/taskLoopWorker" }
+        { "$ref": "#/$defs/taskLoopWorker" },
+        { "$ref": "#/$defs/answerBotWorker" }
       ]
     },
     "agentWorker": {
@@ -187,6 +188,54 @@
             ]
           },
           "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "answerBotWorker": {
+      "type": "object",
+      "description": "An automated answer bot that responds to questions on behalf of the user",
+      "required": ["id", "type", "source"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this worker"
+        },
+        "type": {
+          "const": "answerBot"
+        },
+        "source": {
+          "type": "string",
+          "description": "Path to agent definition file (e.g., 'agents/answer-bot.md')"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this answer bot does"
+        },
+        "model": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Model shortcut (haiku, sonnet, opus) or explicit model ID (e.g., claude-sonnet-4-20250514)"
+            },
+            {
+              "type": "object",
+              "description": "Model specification with provider",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Model ID"
+                },
+                "provider": {
+                  "type": "string",
+                  "description": "Provider name (default: anthropic)"
+                }
+              },
+              "required": ["id"],
+              "additionalProperties": false
+            }
+          ],
+          "description": "Optional model to use for this answer bot. If not specified, uses Claude Code's default."
         }
       },
       "additionalProperties": false

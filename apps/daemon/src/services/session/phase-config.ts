@@ -4,14 +4,14 @@ import { getTemplateWithFullPhasesForProject } from '../../stores/template.store
 import { hasProjectTemplate, copyTemplateToProject } from '../../stores/project-template.store.js';
 
 /**
- * Check if a phase is disabled for a project.
+ * Check if a phase is automated for a project.
  */
-export async function isPhaseDisabled(
+export async function isPhaseAutomated(
   projectId: string,
   phaseName: string
 ): Promise<boolean> {
   const project = await getProjectById(projectId);
-  return project?.disabledPhases?.includes(phaseName) ?? false;
+  return project?.automatedPhases?.includes(phaseName) ?? false;
 }
 
 /**
@@ -59,10 +59,14 @@ export async function getNextPhase(
 }
 
 /**
- * Resolve the actual target phase, skipping any disabled phases.
- * Returns the first enabled phase starting from the requested phase.
- * If the requested phase is enabled, returns it unchanged.
- * If all subsequent phases are disabled, returns the last phase (Done).
+ * Resolve the actual target phase, skipping automated manual-only checkpoints.
+ * Returns the first non-skippable phase starting from the requested phase.
+ * If the requested phase is not skippable, returns it unchanged.
+ * If all subsequent phases are skippable, returns the last phase (Done).
+ *
+ * A phase is skipped only when it is marked as automated AND is a pure manual
+ * checkpoint (transitions.manual === true with no workers defined).
+ * Phases with workers always run regardless of automation status.
  */
 export async function resolveTargetPhase(
   projectId: string,
@@ -85,24 +89,29 @@ export async function resolveTargetPhase(
     return requestedPhase; // Phase not found, return as-is
   }
 
-  // Find first enabled phase starting from requestedPhase
+  // Find first non-skippable phase starting from requestedPhase
   for (let i = startIndex; i < phases.length; i++) {
     const phase = phases[i];
     // Skip "Blocked" - it's a special state only entered explicitly
     if (phase.name === "Blocked") continue;
-    const isDisabled = project.disabledPhases?.includes(phase.name) ?? false;
-    if (!isDisabled) {
-      return phase.name;
+    const isAutomated = project.automatedPhases?.includes(phase.name) ?? false;
+    const isManualCheckpoint =
+      phase.transitions?.manual === true &&
+      (!phase.workers || phase.workers.length === 0);
+    // Only skip phases that are automated AND are pure manual checkpoints
+    if (isAutomated && isManualCheckpoint) {
+      continue;
     }
+    return phase.name;
   }
 
-  // All remaining phases disabled - return last phase (Done)
+  // All remaining phases skippable - return last phase (Done)
   return phases[phases.length - 1].name;
 }
 
 /**
- * Get the next enabled phase after completing the current one.
- * Used by completePhase() to skip disabled phases.
+ * Get the next automated phase after completing the current one.
+ * Used by completePhase() to skip automated manual-only checkpoints.
  */
 export async function getNextEnabledPhase(
   projectId: string,

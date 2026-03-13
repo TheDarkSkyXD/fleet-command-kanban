@@ -14,6 +14,7 @@ export interface TicketPendingQuestion {
   options?: string[]
   askedAt: string
   phase?: string
+  claudeSessionId?: string
 }
 
 export interface TicketPendingResponse {

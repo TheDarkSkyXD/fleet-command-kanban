@@ -1,6 +1,4 @@
-import fs from "fs/promises";
-import path from "path";
-import { TASKS_DIR, BRAINSTORMS_DIR, ARTIFACT_CHAT_DIR } from "../config/paths.js";
+import { getDatabase } from "./db.js";
 
 // =============================================================================
 // Cancellation Registry
@@ -39,29 +37,18 @@ export function createWaitController(contextId: string): AbortController {
 }
 
 // =============================================================================
-// Path Helpers
+// Context Type Helpers
 // =============================================================================
 
-function getBasePath(projectId: string, contextId: string): string {
-  const safeProject = projectId.replace(/\//g, "__");
-
-  if (contextId.startsWith("brain_")) {
-    return path.join(BRAINSTORMS_DIR, safeProject, contextId);
-  }
-  if (contextId.startsWith("artchat_")) {
-    return path.join(ARTIFACT_CHAT_DIR, safeProject, contextId);
-  }
-  // Default: tickets
-  return path.join(TASKS_DIR, safeProject, contextId);
+function deriveContextType(contextId: string): "ticket" | "brainstorm" | "artifact_chat" {
+  if (contextId.startsWith("brain_")) return "brainstorm";
+  if (contextId.startsWith("artchat_")) return "artifact_chat";
+  return "ticket";
 }
 
-function getQuestionPath(projectId: string, contextId: string): string {
-  return path.join(getBasePath(projectId, contextId), "pending-question.json");
-}
-
-function getResponsePath(projectId: string, contextId: string): string {
-  return path.join(getBasePath(projectId, contextId), "pending-response.json");
-}
+// =============================================================================
+// Types
+// =============================================================================
 
 export interface PendingQuestion {
   conversationId: string;
@@ -69,79 +56,125 @@ export interface PendingQuestion {
   options: string[] | null;
   askedAt: string;
   phase?: string;
+  claudeSessionId?: string;
 }
 
 export interface PendingResponse {
   answer: string;
 }
 
-export async function writeQuestion(
+// =============================================================================
+// Question Operations
+// =============================================================================
+
+export function writeQuestion(
   projectId: string,
   contextId: string,
   question: PendingQuestion,
-): Promise<void> {
-  const questionPath = getQuestionPath(projectId, contextId);
-  await fs.mkdir(path.dirname(questionPath), { recursive: true });
-  await fs.writeFile(questionPath, JSON.stringify(question, null, 2));
+): void {
+  const db = getDatabase();
+  db.prepare(`
+    INSERT OR REPLACE INTO pending_questions
+      (project_id, context_id, context_type, conversation_id, question, options, phase, claude_session_id, asked_at, answer)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+  `).run(
+    projectId,
+    contextId,
+    deriveContextType(contextId),
+    question.conversationId,
+    question.question,
+    question.options ? JSON.stringify(question.options) : null,
+    question.phase || null,
+    question.claudeSessionId || null,
+    question.askedAt,
+  );
 }
 
-export async function readQuestion(
+export function readQuestion(
   projectId: string,
   contextId: string,
-): Promise<PendingQuestion | null> {
-  const questionPath = getQuestionPath(projectId, contextId);
-  try {
-    return JSON.parse(await fs.readFile(questionPath, "utf-8"));
-  } catch {
-    return null;
-  }
+): PendingQuestion | null {
+  const db = getDatabase();
+  const row = db.prepare(`
+    SELECT conversation_id, question, options, phase, claude_session_id, asked_at
+    FROM pending_questions
+    WHERE project_id = ? AND context_id = ?
+  `).get(projectId, contextId) as {
+    conversation_id: string;
+    question: string;
+    options: string | null;
+    phase: string | null;
+    claude_session_id: string | null;
+    asked_at: string;
+  } | undefined;
+
+  if (!row) return null;
+
+  return {
+    conversationId: row.conversation_id,
+    question: row.question,
+    options: row.options ? JSON.parse(row.options) : null,
+    askedAt: row.asked_at,
+    ...(row.phase ? { phase: row.phase } : {}),
+    ...(row.claude_session_id ? { claudeSessionId: row.claude_session_id } : {}),
+  };
 }
 
-export async function clearQuestion(
+export function clearQuestion(
   projectId: string,
   contextId: string,
-): Promise<void> {
-  const questionPath = getQuestionPath(projectId, contextId);
-  try {
-    await fs.unlink(questionPath);
-  } catch {
-    // Ignore
-  }
+): void {
+  const db = getDatabase();
+  db.prepare(`
+    DELETE FROM pending_questions WHERE project_id = ? AND context_id = ?
+  `).run(projectId, contextId);
 }
 
-export async function writeResponse(
+// =============================================================================
+// Response Operations
+// =============================================================================
+
+export function writeResponse(
   projectId: string,
   contextId: string,
   response: PendingResponse,
-): Promise<void> {
-  const responsePath = getResponsePath(projectId, contextId);
-  await fs.mkdir(path.dirname(responsePath), { recursive: true });
-  await fs.writeFile(responsePath, JSON.stringify(response, null, 2));
+): void {
+  const db = getDatabase();
+  db.prepare(`
+    UPDATE pending_questions SET answer = ? WHERE project_id = ? AND context_id = ?
+  `).run(response.answer, projectId, contextId);
 }
 
-export async function readResponse(
+export function readResponse(
   projectId: string,
   contextId: string,
-): Promise<PendingResponse | null> {
-  const responsePath = getResponsePath(projectId, contextId);
-  try {
-    return JSON.parse(await fs.readFile(responsePath, "utf-8"));
-  } catch {
-    return null;
-  }
+): PendingResponse | null {
+  const db = getDatabase();
+  const row = db.prepare(`
+    SELECT answer FROM pending_questions
+    WHERE project_id = ? AND context_id = ? AND answer IS NOT NULL
+  `).get(projectId, contextId) as { answer: string } | undefined;
+
+  if (!row) return null;
+  return { answer: row.answer };
 }
 
-export async function clearResponse(
+export function clearResponse(
   projectId: string,
   contextId: string,
-): Promise<void> {
-  const responsePath = getResponsePath(projectId, contextId);
-  try {
-    await fs.unlink(responsePath);
-  } catch {
-    // Ignore
-  }
+): void {
+  // Deletes the entire row — identical to clearQuestion. Both question and
+  // answer live in the same row, so a single DELETE handles full cleanup.
+  // Callers don't need to call both clearResponse and clearQuestion.
+  const db = getDatabase();
+  db.prepare(`
+    DELETE FROM pending_questions WHERE project_id = ? AND context_id = ?
+  `).run(projectId, contextId);
 }
+
+// =============================================================================
+// Async Polling
+// =============================================================================
 
 /**
  * Wait for a response to be written for the given context.
@@ -167,10 +200,9 @@ export async function waitForResponse(
       throw new Error("Wait cancelled - session replaced");
     }
 
-    const response = await readResponse(projectId, contextId);
+    const response = readResponse(projectId, contextId);
     if (response) {
-      await clearResponse(projectId, contextId);
-      await clearQuestion(projectId, contextId);
+      clearResponse(projectId, contextId);
       return response.answer;
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -178,6 +210,10 @@ export async function waitForResponse(
 
   throw new Error("Timeout waiting for response");
 }
+
+// =============================================================================
+// Scanning
+// =============================================================================
 
 export interface PendingContext {
   projectId: string;
@@ -190,148 +226,62 @@ export interface PendingContext {
 /**
  * Scan all tickets and brainstorms for pending responses that need session resumption.
  */
-export async function scanPendingResponses(): Promise<PendingContext[]> {
-  const results: PendingContext[] = [];
+export function scanPendingResponses(): PendingContext[] {
+  const db = getDatabase();
+  const rows = db.prepare(`
+    SELECT project_id, context_id, context_type, conversation_id, question, options, phase, claude_session_id, asked_at, answer
+    FROM pending_questions
+    WHERE answer IS NOT NULL AND context_type IN ('ticket', 'brainstorm')
+  `).all() as Array<{
+    project_id: string;
+    context_id: string;
+    context_type: string;
+    conversation_id: string;
+    question: string;
+    options: string | null;
+    phase: string | null;
+    claude_session_id: string | null;
+    asked_at: string;
+    answer: string;
+  }>;
 
-  // Scan tickets
-  try {
-    const projectDirs = await fs.readdir(TASKS_DIR);
-    for (const projectDir of projectDirs) {
-      const projectPath = path.join(TASKS_DIR, projectDir);
-      const stat = await fs.stat(projectPath);
-      if (!stat.isDirectory()) continue;
-
-      const ticketDirs = await fs.readdir(projectPath);
-      for (const ticketDir of ticketDirs) {
-        const responsePath = path.join(
-          projectPath,
-          ticketDir,
-          "pending-response.json",
-        );
-        try {
-          const responseData = await fs.readFile(responsePath, "utf-8");
-          const response = JSON.parse(responseData) as PendingResponse;
-          const projectId = projectDir.replace(/__/g, "/");
-
-          // Also try to read the question for context
-          const questionPath = path.join(
-            projectPath,
-            ticketDir,
-            "pending-question.json",
-          );
-          let question: PendingQuestion | null = null;
-          try {
-            question = JSON.parse(await fs.readFile(questionPath, "utf-8"));
-          } catch {
-            // No question file
-          }
-
-          results.push({
-            projectId,
-            contextId: ticketDir,
-            type: "ticket",
-            response,
-            question,
-          });
-        } catch {
-          // No pending response for this ticket
-        }
-      }
-    }
-  } catch {
-    // TASKS_DIR may not exist
-  }
-
-  // Scan brainstorms
-  try {
-    const projectDirs = await fs.readdir(BRAINSTORMS_DIR);
-    for (const projectDir of projectDirs) {
-      const projectPath = path.join(BRAINSTORMS_DIR, projectDir);
-      const stat = await fs.stat(projectPath);
-      if (!stat.isDirectory()) continue;
-
-      const brainstormDirs = await fs.readdir(projectPath);
-      for (const brainstormDir of brainstormDirs) {
-        const responsePath = path.join(
-          projectPath,
-          brainstormDir,
-          "pending-response.json",
-        );
-        try {
-          const responseData = await fs.readFile(responsePath, "utf-8");
-          const response = JSON.parse(responseData) as PendingResponse;
-          const projectId = projectDir.replace(/__/g, "/");
-
-          // Also try to read the question for context
-          const questionPath = path.join(
-            projectPath,
-            brainstormDir,
-            "pending-question.json",
-          );
-          let question: PendingQuestion | null = null;
-          try {
-            question = JSON.parse(await fs.readFile(questionPath, "utf-8"));
-          } catch {
-            // No question file
-          }
-
-          results.push({
-            projectId,
-            contextId: brainstormDir,
-            type: "brainstorm",
-            response,
-            question,
-          });
-        } catch {
-          // No pending response for this brainstorm
-        }
-      }
-    }
-  } catch {
-    // BRAINSTORMS_DIR may not exist
-  }
-
-  return results;
+  return rows.map((row) => ({
+    projectId: row.project_id,
+    contextId: row.context_id,
+    type: row.context_type as "ticket" | "brainstorm",
+    response: { answer: row.answer },
+    question: {
+      conversationId: row.conversation_id,
+      question: row.question,
+      options: row.options ? JSON.parse(row.options) : null,
+      askedAt: row.asked_at,
+      ...(row.phase ? { phase: row.phase } : {}),
+      ...(row.claude_session_id ? { claudeSessionId: row.claude_session_id } : {}),
+    },
+  }));
 }
 
 /**
- * Scan all tickets for pending questions (pending-question.json files).
+ * Scan all tickets for pending questions.
  * Returns ticket IDs grouped by project ID.
  * Used by the processing:sync heartbeat to provide authoritative pending state.
  */
-export async function getPendingQuestionsByProject(): Promise<
-  Map<string, string[]>
-> {
+export function getPendingQuestionsByProject(): Map<string, string[]> {
+  const db = getDatabase();
+  const rows = db.prepare(`
+    SELECT project_id, context_id
+    FROM pending_questions
+    WHERE context_type = 'ticket'
+  `).all() as Array<{ project_id: string; context_id: string }>;
+
   const result = new Map<string, string[]>();
-
-  try {
-    const projectDirs = await fs.readdir(TASKS_DIR);
-    for (const projectDir of projectDirs) {
-      const projectPath = path.join(TASKS_DIR, projectDir);
-      const stat = await fs.stat(projectPath);
-      if (!stat.isDirectory()) continue;
-
-      const ticketDirs = await fs.readdir(projectPath);
-      const pendingTicketIds: string[] = [];
-
-      for (const ticketDir of ticketDirs) {
-        const questionPath = path.join(projectPath, ticketDir, "pending-question.json");
-        try {
-          await fs.access(questionPath);
-          pendingTicketIds.push(ticketDir);
-        } catch {
-          // No pending question for this ticket
-        }
-      }
-
-      if (pendingTicketIds.length > 0) {
-        const projectId = projectDir.replace(/__/g, "/");
-        result.set(projectId, pendingTicketIds);
-      }
+  for (const row of rows) {
+    const existing = result.get(row.project_id);
+    if (existing) {
+      existing.push(row.context_id);
+    } else {
+      result.set(row.project_id, [row.context_id]);
     }
-  } catch {
-    // TASKS_DIR may not exist
   }
-
   return result;
 }

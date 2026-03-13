@@ -152,7 +152,7 @@ export function registerArtifactChatRoutes(
         // Update activity timestamp
         artifactChatStore.updateActivity(contextId);
 
-        const question = await readQuestion(projectId, contextId);
+        const question = readQuestion(projectId, contextId);
 
         res.json({
           question: question
@@ -202,7 +202,7 @@ export function registerArtifactChatRoutes(
 
         // Update activity and write response
         artifactChatStore.updateActivity(contextId);
-        await writeResponse(projectId, contextId, { answer: message });
+        writeResponse(projectId, contextId, { answer: message });
 
         res.json({ ok: true });
       } catch (error) {
@@ -233,8 +233,10 @@ export function registerArtifactChatRoutes(
           }
 
           // Clean up files
-          await clearQuestion(projectId, contextId).catch(() => {});
-          await clearResponse(projectId, contextId).catch(() => {});
+          try {
+            clearQuestion(projectId, contextId);
+            clearResponse(projectId, contextId);
+          } catch {}
 
           // Remove from store
           artifactChatStore.deleteSession(contextId);

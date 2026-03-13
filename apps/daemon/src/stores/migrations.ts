@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-const CURRENT_SCHEMA_VERSION = 9;
+const CURRENT_SCHEMA_VERSION = 13;
 
 /**
  * Run database migrations.
@@ -43,6 +43,22 @@ export function runMigrations(db: Database.Database): void {
 
   if (version < 9) {
     migrateV9(db);
+  }
+
+  if (version < 10) {
+    migrateV10(db);
+  }
+
+  if (version < 11) {
+    migrateV11(db);
+  }
+
+  if (version < 12) {
+    migrateV12(db);
+  }
+
+  if (version < 13) {
+    migrateV13(db);
   }
 
   db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
@@ -401,6 +417,83 @@ function migrateV8(db: Database.Database): void {
  */
 function migrateV9(db: Database.Database): void {
   db.exec(`ALTER TABLE projects ADD COLUMN agent_name TEXT`);
+}
+
+/**
+ * V10: Add WIP limits to projects and pending_phase to tickets
+ */
+function migrateV10(db: Database.Database): void {
+  const projectColumns = db.pragma("table_info(projects)") as { name: string }[];
+  const projectColNames = new Set(projectColumns.map((c) => c.name));
+
+  if (!projectColNames.has("wip_limits")) {
+    db.exec(`ALTER TABLE projects ADD COLUMN wip_limits TEXT`);
+  }
+
+  const ticketColumns = db.pragma("table_info(tickets)") as { name: string }[];
+  const ticketColNames = new Set(ticketColumns.map((c) => c.name));
+
+  if (!ticketColNames.has("pending_phase")) {
+    db.exec(`ALTER TABLE tickets ADD COLUMN pending_phase TEXT`);
+  }
+}
+
+/**
+ * V11: Rename disabled_phases → automated_phases (add new columns, copy data)
+ */
+function migrateV11(db: Database.Database): void {
+  const columns = db.pragma("table_info(projects)") as { name: string }[];
+  const colNames = new Set(columns.map((c) => c.name));
+
+  if (!colNames.has("automated_phases")) {
+    db.exec(`ALTER TABLE projects ADD COLUMN automated_phases TEXT`);
+
+    // Copy data from disabled_phases if it exists
+    if (colNames.has("disabled_phases")) {
+      db.exec(`UPDATE projects SET automated_phases = disabled_phases WHERE disabled_phases IS NOT NULL`);
+    }
+  }
+
+  // Also add automated_phase_migration (renamed from disabled_phase_migration)
+  if (!colNames.has("automated_phase_migration")) {
+    db.exec(`ALTER TABLE projects ADD COLUMN automated_phase_migration INTEGER DEFAULT 0`);
+    if (colNames.has("disabled_phase_migration")) {
+      db.exec(`UPDATE projects SET automated_phase_migration = disabled_phase_migration`);
+    }
+  }
+}
+
+/**
+ * V12: Pending questions table (replaces filesystem-based IPC)
+ */
+function migrateV12(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pending_questions (
+      project_id        TEXT NOT NULL,
+      context_id        TEXT NOT NULL,
+      context_type      TEXT NOT NULL,
+      conversation_id   TEXT,
+      question          TEXT NOT NULL,
+      options           TEXT,
+      phase             TEXT,
+      claude_session_id TEXT,
+      asked_at          TEXT NOT NULL,
+      answer            TEXT,
+      PRIMARY KEY (project_id, context_id)
+    );
+  `);
+}
+
+/**
+ * V13: Add base_branch column to tickets table
+ */
+function migrateV13(db: Database.Database): void {
+  const columns = db.pragma("table_info(tickets)") as { name: string }[];
+  const colNames = new Set(columns.map((c) => c.name));
+
+  if (!colNames.has("base_branch")) {
+    db.exec(`ALTER TABLE tickets ADD COLUMN base_branch TEXT`);
+  }
 }
 
 /**
