@@ -18,10 +18,6 @@ interface AppState {
   currentProjectId: string | null
   setCurrentProjectId: (id: string | null) => void
 
-  // Board view preference
-  boardViewMode: 'board' | 'table'
-  setBoardViewMode: (mode: 'board' | 'table') => void
-
   /**
    * Set of ticket IDs currently being processed, keyed by project ID.
    * Updated by SSE processing:sync and session:ended events.
@@ -104,10 +100,6 @@ export const useAppStore = create<AppState>()(
       // Current project
       currentProjectId: null,
       setCurrentProjectId: (id) => set({ currentProjectId: id }),
-
-      // Board view preference
-      boardViewMode: 'board',
-      setBoardViewMode: (mode) => set({ boardViewMode: mode }),
 
       // Processing tickets - updated by SSE processing:sync and session:ended
       processingTickets: new Map(),
@@ -301,7 +293,7 @@ export const useAppStore = create<AppState>()(
       name: 'fleet-command-app',
       partialize: (state) => ({
         currentProjectId: state.currentProjectId,
-        boardViewMode: state.boardViewMode,
+
         showArchivedTickets: state.showArchivedTickets,
         collapsedFolders: state.collapsedFolders
       })

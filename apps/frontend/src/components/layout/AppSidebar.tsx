@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Plus, FolderPlus } from "lucide-react";
+import { Plus, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -28,6 +28,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Tooltip,
@@ -61,14 +62,14 @@ function FleetCommandLogo({
               strokeWidth="1.5"
             />
             {/* Fleet chevrons */}
-            <path d="M16 8 L22 14" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
-            <path d="M16 8 L10 14" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 8 L22 14" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 8 L10 14" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" />
             <path d="M16 14 L23 21" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M16 14 L9 21" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" />
             <path d="M16 20 L24 28" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
             <path d="M16 20 L8 28" stroke="#60A5FA" strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
             {/* Command point */}
-            <circle cx="16" cy="7" r="2" fill="#F59E0B" />
+            <circle cx="16" cy="7" r="2" fill="#58a6ff" />
           </svg>
         </div>
 
@@ -80,6 +81,31 @@ function FleetCommandLogo({
         )}
       </div>
     </div>
+  );
+}
+
+function SidebarCollapseToggle() {
+  const { state, toggleSidebar } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={toggleSidebar}
+          className="flex items-center justify-center w-8 h-8 rounded-md text-text-primary hover:text-white hover:bg-bg-hover transition-colors absolute right-2 bottom-1 group-data-[collapsible=icon]:relative group-data-[collapsible=icon]:right-auto group-data-[collapsible=icon]:bottom-auto group-data-[collapsible=icon]:mb-1"
+        >
+          {isCollapsed ? (
+            <PanelLeftOpen className="h-5 w-5" strokeWidth={2} />
+          ) : (
+            <PanelLeftClose className="h-5 w-5" strokeWidth={2} />
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">
+        {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -194,25 +220,31 @@ export function AppSidebar() {
     >
       <Sidebar collapsible="icon">
         <SidebarHeader className="m-0 p-0 gap-0">
-          {/* Expanded branding */}
-          <Link
-            to="/"
-            className="group-data-[collapsible=icon]:hidden flex items-center cursor-pointer"
-          >
-            <FleetCommandLogo />
-          </Link>
-          {/* Collapsed branding - just the icon */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/"
-                className="hidden group-data-[collapsible=icon]:flex justify-center items-center cursor-pointer"
-              >
-                <FleetCommandLogo collapsed />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right">Fleet Command</TooltipContent>
-          </Tooltip>
+          {/* Expanded branding with collapse toggle */}
+          <div className="group-data-[collapsible=icon]:hidden relative">
+            <Link
+              to="/"
+              className="flex items-center cursor-pointer"
+            >
+              <FleetCommandLogo />
+            </Link>
+            <SidebarCollapseToggle />
+          </div>
+          {/* Collapsed branding - just the icon with expand toggle */}
+          <div className="hidden group-data-[collapsible=icon]:flex flex-col items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/"
+                  className="flex justify-center items-center cursor-pointer"
+                >
+                  <FleetCommandLogo collapsed />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Fleet Command</TooltipContent>
+            </Tooltip>
+            <SidebarCollapseToggle />
+          </div>
           <SidebarMenu className="group-data-[collapsible=icon]:items-center">
             {/* Dropdown menu - shows below logo when collapsed */}
             <SidebarMenuItem className="group-data-[collapsible=icon]:block hidden">

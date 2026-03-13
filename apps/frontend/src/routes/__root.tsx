@@ -9,7 +9,7 @@ import { BrainstormDetailPanel } from '@/components/brainstorm/BrainstormDetailP
 import { AddTicketModal } from '@/components/board/AddTicketModal'
 import { AddProjectModal } from '@/components/layout/AddProjectModal'
 import { CreateFolderModal } from '@/components/layout/CreateFolderModal'
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { useProjects } from '@/hooks/queries'
 import { useAppStore } from '@/stores/appStore'
 import { getProjectIcon } from '@/components/configure/ProjectIconPicker'
@@ -77,7 +77,6 @@ function RootLayout() {
         {/* Header - only show when we have projects */}
         {hasProjects && (
           <header className="flex items-center gap-4 px-4 h-12 border-b border-border bg-bg-secondary shrink-0 electron-drag-region">
-            <SidebarTrigger className="-ml-1" />
             {/* Mobile: show project name and subpage in header */}
             {currentProject && (() => {
               const ProjectIcon = getProjectIcon(currentProject.icon || 'package')
