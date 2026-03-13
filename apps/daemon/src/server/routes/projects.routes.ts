@@ -5,11 +5,20 @@ import { execSync } from "child_process";
 import {
   getAllProjectsMap,
   getProjectById,
+  getProjectBySlug,
   createProject,
   updateProject,
   updateProjectTemplate,
   deleteProject,
 } from "../../stores/project.store.js";
+
+/**
+ * Resolve a project by ID or slug.
+ * The frontend uses slugs in URLs, so we need to fall back to slug lookup.
+ */
+function resolveProject(idOrSlug: string) {
+  return getProjectById(idOrSlug) ?? getProjectBySlug(idOrSlug);
+}
 import {
   getTemplate,
   getDefaultTemplate,
@@ -290,7 +299,12 @@ export function registerProjectRoutes(
   app.delete("/api/projects/:id", async (req: Request, res: Response) => {
     try {
       const id = decodeURIComponent(req.params.id);
-      deleteProject(id);
+      const project = resolveProject(id);
+      if (!project) {
+        res.status(404).json({ error: "Project not found" });
+        return;
+      }
+      deleteProject(project.id);
       await refreshProjects();
       res.json({ ok: true });
     } catch (error) {
@@ -314,13 +328,13 @@ export function registerProjectRoutes(
         folderId?: string | null;
       };
 
-      const project = getProjectById(id);
+      const project = resolveProject(id);
       if (!project) {
         res.status(404).json({ error: "Project not found" });
         return;
       }
 
-      const updatedProject = updateProject(id, updates);
+      const updatedProject = updateProject(project.id, updates);
       await refreshProjects();
       res.json(updatedProject);
     } catch (error) {
@@ -339,7 +353,7 @@ export function registerProjectRoutes(
           automated: boolean;
         };
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project) {
           res.status(404).json({ error: "Project not found" });
           return;
@@ -353,7 +367,7 @@ export function registerProjectRoutes(
 
         // Validate phase exists in template
         if (project.template) {
-          const template = await getTemplateWithFullPhasesForProject(id);
+          const template = await getTemplateWithFullPhasesForProject(project.id);
           const phaseExists = template?.phases.some(
             (p) => p.name === phaseId || p.id === phaseId,
           );
@@ -371,22 +385,22 @@ export function registerProjectRoutes(
 
         // If automating and phase has tickets, need to migrate them
         if (automated) {
-          updateProject(id, {
+          updateProject(project.id, {
             automatedPhaseMigration: true,
             automatedPhases: updated,
           });
 
           try {
-            await migrateTicketsFromAutomatedPhase(id, phaseId, sessionService);
+            await migrateTicketsFromAutomatedPhase(project.id, phaseId, sessionService);
           } finally {
             // Always clear migration flag, even on partial failure
-            updateProject(id, { automatedPhaseMigration: false });
+            updateProject(project.id, { automatedPhaseMigration: false });
           }
         } else {
-          updateProject(id, { automatedPhases: updated });
+          updateProject(project.id, { automatedPhases: updated });
         }
 
-        const result = getProjectById(id);
+        const result = getProjectById(project.id);
         await refreshProjects();
         res.json(result);
       } catch (error) {
@@ -407,11 +421,12 @@ export function registerProjectRoutes(
         return;
       }
 
-      const project = updateProjectTemplate(id, name, template.version);
-      if (!project) {
+      const existingProject = resolveProject(id);
+      if (!existingProject) {
         res.status(404).json({ error: "Project not found" });
         return;
       }
+      const project = updateProjectTemplate(existingProject.id, name, template.version);
 
       await refreshProjects();
       res.json(project);
@@ -426,7 +441,7 @@ export function registerProjectRoutes(
     async (req: Request, res: Response) => {
       try {
         const id = decodeURIComponent(req.params.id);
-        const project = getProjectById(id);
+        const project = resolveProject(id);
 
         if (!project?.template) {
           res.json({ current: null, available: null, upgradeType: null });
@@ -435,8 +450,8 @@ export function registerProjectRoutes(
 
         // Get local template version
         let currentVersion: string | null = null;
-        if (await hasProjectTemplate(id)) {
-          const localTemplate = await getProjectTemplate(id);
+        if (await hasProjectTemplate(project.id)) {
+          const localTemplate = await getProjectTemplate(project.id);
           currentVersion = localTemplate?.version || null;
         } else {
           // Legacy: no local copy, use project metadata
@@ -477,7 +492,7 @@ export function registerProjectRoutes(
     async (req: Request, res: Response) => {
       try {
         const id = decodeURIComponent(req.params.id);
-        const project = getProjectById(id);
+        const project = resolveProject(id);
 
         if (!project?.template) {
           res.status(404).json({ error: "Project has no template assigned" });
@@ -507,14 +522,14 @@ export function registerProjectRoutes(
         const id = decodeURIComponent(req.params.id);
         const { force } = req.body as { force?: boolean };
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project?.template) {
           res.status(400).json({ error: "Project has no template assigned" });
           return;
         }
 
         // Get current and available versions
-        const localTemplate = await getProjectTemplate(id);
+        const localTemplate = await getProjectTemplate(project.id);
         const catalogTemplate = await getTemplate(project.template.name);
 
         if (!catalogTemplate) {
@@ -538,7 +553,7 @@ export function registerProjectRoutes(
         if (upgradeType === "major") {
           if (!force) {
             // Return info about what will be reset
-            const tickets = await listTickets(id);
+            const tickets = await listTickets(project.id);
             const inProgressTickets = tickets.filter(
               (t) => t.phase !== "Ideas" && t.phase !== "Done"
             );
@@ -555,7 +570,7 @@ export function registerProjectRoutes(
           }
 
           // Reset all in-progress tickets
-          const tickets = await listTickets(id);
+          const tickets = await listTickets(project.id);
           for (const ticket of tickets) {
             if (ticket.phase !== "Ideas" && ticket.phase !== "Done") {
               // Stop active session if any
@@ -565,10 +580,10 @@ export function registerProjectRoutes(
               }
 
               // Clear worker state
-              await clearWorkerState(id, ticket.id);
+              await clearWorkerState(project.id, ticket.id);
 
               // Move to Ideas
-              await updateTicket(id, ticket.id, {
+              await updateTicket(project.id, ticket.id, {
                 phase: "Ideas" as TicketPhase,
               });
             }
@@ -576,8 +591,8 @@ export function registerProjectRoutes(
         }
 
         // Copy new template
-        const newTemplate = await copyTemplateToProject(id, project.template.name);
-        updateProjectTemplate(id, project.template.name, newTemplate.version);
+        const newTemplate = await copyTemplateToProject(project.id, project.template.name);
+        updateProjectTemplate(project.id, project.template.name, newTemplate.version);
 
         await refreshProjects();
 
@@ -597,7 +612,7 @@ export function registerProjectRoutes(
   app.get("/api/projects/:id/git-branch", async (req: Request, res: Response) => {
     try {
       const id = decodeURIComponent(req.params.id);
-      const project = getProjectById(id);
+      const project = resolveProject(id);
 
       if (!project) {
         res.status(404).json({ error: "Project not found" });
@@ -638,7 +653,7 @@ export function registerProjectRoutes(
   app.get("/api/projects/:id/phases", async (req: Request, res: Response) => {
     try {
       const id = decodeURIComponent(req.params.id);
-      const project = getProjectById(id);
+      const project = resolveProject(id);
 
       if (!project?.template) {
         // No template assigned - return just Ideas and Done
@@ -646,7 +661,7 @@ export function registerProjectRoutes(
         return;
       }
 
-      const template = await getTemplateWithFullPhasesForProject(id);
+      const template = await getTemplateWithFullPhasesForProject(project.id);
       if (!template) {
         res.json(["Ideas", "Done"]);
         return;
@@ -672,7 +687,7 @@ export function registerProjectRoutes(
           return;
         }
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project) {
           res.status(404).json({ error: "Project not found" });
           return;
@@ -680,12 +695,12 @@ export function registerProjectRoutes(
 
         const agentPath = `agents/${agentType}.md`;
 
-        if (!(await hasProjectAgentOverride(id, agentPath))) {
+        if (!(await hasProjectAgentOverride(project.id, agentPath))) {
           res.status(404).json({ error: "Override not found" });
           return;
         }
 
-        const content = await getProjectAgentOverride(id, agentPath);
+        const content = await getProjectAgentOverride(project.id, agentPath);
         res.json({ content });
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -712,7 +727,7 @@ export function registerProjectRoutes(
           return;
         }
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project) {
           res.status(404).json({ error: "Project not found" });
           return;
@@ -722,13 +737,13 @@ export function registerProjectRoutes(
 
         // Verify base agent exists before creating override
         try {
-          await getProjectAgentPrompt(id, agentPath);
+          await getProjectAgentPrompt(project.id, agentPath);
         } catch {
           res.status(400).json({ error: "Agent type does not exist in template" });
           return;
         }
 
-        await saveProjectAgentOverride(id, agentPath, content);
+        await saveProjectAgentOverride(project.id, agentPath, content);
         res.json({ ok: true });
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -749,14 +764,14 @@ export function registerProjectRoutes(
           return;
         }
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project) {
           res.status(404).json({ error: "Project not found" });
           return;
         }
 
         const agentPath = `agents/${agentType}.md`;
-        await deleteProjectAgentOverride(id, agentPath);
+        await deleteProjectAgentOverride(project.id, agentPath);
         res.json({ ok: true });
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
@@ -777,7 +792,7 @@ export function registerProjectRoutes(
           return;
         }
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project) {
           res.status(404).json({ error: "Project not found" });
           return;
@@ -787,7 +802,7 @@ export function registerProjectRoutes(
 
         // Try project template first, then fall back to global
         try {
-          const content = await getProjectAgentPrompt(id, agentPath);
+          const content = await getProjectAgentPrompt(project.id, agentPath);
           res.json({ content });
           return;
         } catch {
@@ -820,18 +835,20 @@ export function registerProjectRoutes(
         const id = decodeURIComponent(req.params.id);
         const phaseName = decodeURIComponent(req.params.phase);
 
-        const project = getProjectById(id);
+        const project = resolveProject(id);
         if (!project) {
           res.status(404).json({ error: "Project not found" });
           return;
         }
+
+        const projectId = project.id;
 
         if (!project.template) {
           res.json({ workers: [] });
           return;
         }
 
-        const template = await getTemplateWithFullPhasesForProject(id);
+        const template = await getTemplateWithFullPhasesForProject(projectId);
         if (!template) {
           res.json({ workers: [] });
           return;
@@ -882,7 +899,7 @@ export function registerProjectRoutes(
                 node.agentType = match[1];
                 // Check if override exists
                 const agentPath = `agents/${match[1]}.md`;
-                node.hasOverride = await hasProjectAgentOverride(id, agentPath);
+                node.hasOverride = await hasProjectAgentOverride(projectId, agentPath);
               }
               if (worker.model) {
                 node.model = typeof worker.model === "string" ? worker.model : worker.model.id;
