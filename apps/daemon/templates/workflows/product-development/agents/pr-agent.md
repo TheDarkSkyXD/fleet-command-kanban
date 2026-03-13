@@ -54,7 +54,7 @@ gh pr create \
 - [Specification](link)
 
 ---
-🥔 Baked with Fleet Command[https://github.com/crathgeb/fleet-command]
+📡 Dispatched from Fleet Command[https://github.com/crathgeb/fleet-command]
 EOF
 )"
 ```
