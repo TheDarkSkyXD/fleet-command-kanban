@@ -59,6 +59,38 @@ for (const name of unneededDirs) {
   }
 }
 
+// Rebuild native modules for Electron's Node.js ABI
+// We do this here (instead of electron-builder's npmRebuild) to avoid
+// path-with-spaces issues in node-gyp when the workspace root has spaces
+console.log('[prepare-daemon] Rebuilding native modules for Electron...');
+try {
+  const electronVersion = require('electron/package.json').version;
+  // Temporarily rename _modules back so @electron/rebuild can find them
+  const modulesPath = path.join(buildDir, '_modules');
+  const tempNodeModules = path.join(buildDir, 'node_modules');
+  if (fs.existsSync(modulesPath)) {
+    fs.renameSync(modulesPath, tempNodeModules);
+  }
+  execSync(
+    `npx @electron/rebuild --version ${electronVersion} --module-dir "${buildDir}" --only better-sqlite3,node-pty`,
+    { cwd: buildDir, stdio: 'inherit' }
+  );
+  // Rename back to _modules
+  if (fs.existsSync(tempNodeModules)) {
+    fs.renameSync(tempNodeModules, modulesPath);
+  }
+  console.log('[prepare-daemon] Native modules rebuilt for Electron');
+} catch (err) {
+  console.warn('[prepare-daemon] Native module rebuild failed (non-fatal):', err.message);
+  console.warn('[prepare-daemon] The app may still work if prebuilt binaries are compatible');
+  // Ensure _modules name is restored even on failure
+  const tempNodeModules = path.join(buildDir, 'node_modules');
+  const modulesPath = path.join(buildDir, '_modules');
+  if (fs.existsSync(tempNodeModules) && !fs.existsSync(modulesPath)) {
+    fs.renameSync(tempNodeModules, modulesPath);
+  }
+}
+
 console.log('[prepare-daemon] Daemon package created at:', buildDir);
 
 function flattenNodeModules(nodeModulesPath) {

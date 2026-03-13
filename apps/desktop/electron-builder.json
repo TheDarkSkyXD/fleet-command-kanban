@@ -6,6 +6,7 @@
   "directories": {
     "output": "release"
   },
+  "npmRebuild": false,
   "files": [
     "out/**/*"
   ],
