@@ -14,3 +14,5 @@ export { registerRalphRoutes, getPendingVerdict, getVerdictKey } from "./ralph.r
 export { registerArtifactChatRoutes } from './artifact-chat.routes.js';
 export { registerFolderRoutes } from "./folders.routes.js";
 export { registerFilesystemRoutes } from "./filesystem.routes.js";
+export { registerTerminalRoutes } from "./terminal.routes.js";
+export { registerDevServerRoutes } from "./devserver.routes.js";

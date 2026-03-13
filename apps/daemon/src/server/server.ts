@@ -5,6 +5,8 @@ import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { EventEmitter } from "events";
 import { lock } from "proper-lockfile";
+import { WebSocketServer, WebSocket } from "ws";
+import { IncomingMessage } from "http";
 
 import { DEFAULT_PORT } from "@fleet-command/shared";
 import { eventBus } from "../utils/event-bus.js";
@@ -28,9 +30,13 @@ import {
   registerArtifactChatRoutes,
   registerFolderRoutes,
   registerFilesystemRoutes,
+  registerTerminalRoutes,
+  registerDevServerRoutes,
   refreshProjects,
   getProjects,
 } from "./routes/index.js";
+import { terminalManager } from "../services/terminal/terminal-manager.js";
+import { devServerManager } from "../services/devserver/devserver-manager.js";
 import {
   loadGlobalConfig,
   saveGlobalConfig,
@@ -54,7 +60,7 @@ import {
   isTerminalPhase,
   listTickets,
 } from "../stores/ticket.store.js";
-import { getBrainstorm } from "../stores/brainstorm.store.js";
+import { getBrainstorm, updateBrainstorm } from "../stores/brainstorm.store.js";
 import {
   endStoredSession,
   createStoredSession,
@@ -67,6 +73,7 @@ import { SESSIONS_DIR, LOCK_FILE, PID_FILE, TASKS_DIR } from "../config/paths.js
 import type { GlobalConfig, Project } from "../types/config.types.js";
 import { getWorkerState, clearWorkerState } from "../services/session/worker-state.js";
 import { getPhaseConfig } from "../services/session/phase-config.js";
+import { setupWipDrainListener } from "../services/session/wip.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -217,7 +224,7 @@ async function reconcileTicketSessions(): Promise<void> {
 async function recoverPendingResponses(): Promise<void> {
   if (!sessionService) return;
 
-  const pending = await scanPendingResponses();
+  const pending = scanPendingResponses();
   if (pending.length === 0) return;
 
   console.log(
@@ -249,8 +256,8 @@ async function recoverPendingResponses(): Promise<void> {
           console.log(
             `[recovery] Ticket ${item.contextId} is in terminal phase ${ticket.phase}, cleaning up stale pending files`,
           );
-          await clearQuestion(item.projectId, item.contextId);
-          await clearResponse(item.projectId, item.contextId);
+          clearQuestion(item.projectId, item.contextId);
+          clearResponse(item.projectId, item.contextId);
           continue;
         }
 
@@ -469,6 +476,7 @@ export async function main(): Promise<void> {
   console.log(`Loaded ${projects.size} registered project(s)`);
 
   sessionService = new SessionService(eventBus as EventEmitter);
+  setupWipDrainListener(sessionService);
 
   // Session events - sessions are tracked in the sessions table by SessionService
   eventBus.on(
@@ -501,20 +509,44 @@ export async function main(): Promise<void> {
       sessionId: string;
       projectId: string;
       ticketId?: string;
+      brainstormId?: string;
       exitCode?: number;
     }) => {
-      const { sessionId, projectId, ticketId, exitCode } = data;
-      if (!projectId || !ticketId) return;
+      const { sessionId, projectId, ticketId, brainstormId, exitCode } = data;
 
-      console.log(
-        `[session:ended] Session ${sessionId} ended for ticket ${ticketId} with exit code ${exitCode}`,
-      );
-      // Emit ticket update so frontend knows it's no longer processing
-      try {
-        const ticket = await getTicket(projectId, ticketId);
-        eventBus.emit("ticket:updated", { projectId, ticket });
-      } catch {
-        // Ignore
+      // Handle ticket session end
+      if (projectId && ticketId) {
+        console.log(
+          `[session:ended] Session ${sessionId} ended for ticket ${ticketId} with exit code ${exitCode}`,
+        );
+        try {
+          const ticket = await getTicket(projectId, ticketId);
+          eventBus.emit("ticket:updated", { projectId, ticket });
+        } catch {
+          // Ignore
+        }
+      }
+
+      // Handle brainstorm session end
+      if (projectId && brainstormId) {
+        console.log(
+          `[session:ended] Session ${sessionId} ended for brainstorm ${brainstormId} with exit code ${exitCode}`,
+        );
+        try {
+          const stillActive = getActiveSessionForBrainstorm(brainstormId);
+          const pendingQuestion = await readQuestion(projectId, brainstormId);
+
+          if (!stillActive && !pendingQuestion) {
+            const brainstorm = await updateBrainstorm(projectId, brainstormId, {
+              status: 'completed',
+            });
+            if (brainstorm) {
+              eventBus.emit('brainstorm:updated', { projectId, brainstorm });
+            }
+          }
+        } catch {
+          // Ignore - brainstorm may have been deleted
+        }
       }
     },
   );
@@ -524,7 +556,7 @@ export async function main(): Promise<void> {
   setInterval(async () => {
     if (!sessionService) return;
     const processingByProject = sessionService.getProcessingByProject();
-    const pendingByProject = await getPendingQuestionsByProject();
+    const pendingByProject = getPendingQuestionsByProject();
 
     // Collect all project IDs from both maps
     const allProjectIds = new Set([
@@ -627,6 +659,8 @@ export async function main(): Promise<void> {
   registerArtifactChatRoutes(app, sessionService, getProjects);
   registerFolderRoutes(app);
   registerFilesystemRoutes(app);
+  registerTerminalRoutes(app);
+  registerDevServerRoutes(app);
 
   // SPA catch-all route - fallback to index.html for SPA routing
   if (frontendDist) {
@@ -648,6 +682,40 @@ export async function main(): Promise<void> {
     process.env.POTATO_DAEMON_PORT || globalConfig?.daemon?.port || DEFAULT_PORT;
   const port = typeof portValue === 'string' ? parseInt(portValue, 10) : portValue;
   server = app.listen(port, '0.0.0.0', async () => {
+    // WebSocket server (noServer mode — we handle upgrades manually)
+    const wss = new WebSocketServer({ noServer: true });
+
+    server!.on("upgrade", (request: IncomingMessage, socket, head) => {
+      const url = new URL(request.url || "", `http://localhost:${port}`);
+      const pathname = url.pathname;
+
+      // Terminal WebSocket: /ws/terminal/:projectId/:terminalId
+      const terminalMatch = pathname.match(/^\/ws\/terminal\/([^/]+)\/([^/]+)$/);
+      if (terminalMatch) {
+        const [, projectId, terminalId] = terminalMatch;
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          const attached = terminalManager.attachClient(projectId, terminalId, ws);
+          if (!attached) {
+            ws.close(1008, "Terminal not found");
+          }
+        });
+        return;
+      }
+
+      // Dev server WebSocket: /ws/devserver/:projectId
+      const devserverMatch = pathname.match(/^\/ws\/devserver\/([^/]+)$/);
+      if (devserverMatch) {
+        const [, projectId] = devserverMatch;
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          devServerManager.attachLogClient(projectId, ws);
+        });
+        return;
+      }
+
+      // Unknown WebSocket path
+      socket.destroy();
+    });
+
     const urls = formatListenUrls('0.0.0.0', port);
     console.log(`Dashboard running at:\n${urls.map((u) => `  ${u}`).join('\n')}`);
     await writePid(process.pid);
@@ -709,7 +777,7 @@ export async function main(): Promise<void> {
 
                 if (project && sessionService) {
                   // Check if this is a suspended session (has pending question)
-                  const pendingQuestion = await readQuestion(context.projectId, context.ticketId);
+                  const pendingQuestion = readQuestion(context.projectId, context.ticketId);
 
                   if (pendingQuestion) {
                     // Suspended session — resume with --resume flag
@@ -808,7 +876,7 @@ export async function main(): Promise<void> {
                 const project = projects.get(context.projectId);
 
                 if (project && sessionService) {
-                  const pendingQuestion = await readQuestion(context.projectId, context.ticketId);
+                  const pendingQuestion = readQuestion(context.projectId, context.ticketId);
 
                   if (pendingQuestion) {
                     const newSessionId = await sessionService.resumeSuspendedTicket(
@@ -885,6 +953,10 @@ async function shutdown(): Promise<void> {
   if (slackProvider) {
     await slackProvider.shutdown();
   }
+
+  // Clean up terminal and dev server managers
+  terminalManager.cleanup();
+  devServerManager.cleanup();
 
   if (sessionService) {
     await sessionService.stopAll(8000);

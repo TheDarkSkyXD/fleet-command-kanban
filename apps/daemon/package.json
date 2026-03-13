@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.73.0",
-    "@modelcontextprotocol/sdk": "^1.0.0",
     "@fleet-command/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "@slack/socket-mode": "^2.0.5",
     "@slack/web-api": "^7.14.1",
     "better-sqlite3": "^12.6.2",
@@ -28,7 +28,8 @@
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
     "node-pty": "^1.1.0",
-    "proper-lockfile": "^4.1.2"
+    "proper-lockfile": "^4.1.2",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -36,6 +37,7 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^20.19.30",
     "@types/proper-lockfile": "^4.1.4",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.9.3"
   },
   "engines": {
