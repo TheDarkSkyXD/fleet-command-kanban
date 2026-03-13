@@ -5,6 +5,7 @@ import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react
 import { routeTree } from './routeTree.gen'
 import { useSSE } from '@/hooks/useSSE'
 import { Toaster } from './components/ui/toaster'
+import { UpdateNotification } from './components/update-notification/UpdateNotification'
 import './index.css'
 
 // Create hash history for Electron compatibility
@@ -40,6 +41,7 @@ function App() {
     <>
       <RouterProvider router={router} />
       <Toaster />
+      <UpdateNotification />
     </>
   )
 }

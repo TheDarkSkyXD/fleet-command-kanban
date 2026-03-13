@@ -25,6 +25,7 @@ import { ProjectColorPicker } from './ProjectColorPicker'
 import { useProjects, useTemplates, useUpdateProject, useDeleteProject } from '@/hooks/queries'
 import { useTemplateStatus } from '@/hooks/useTemplateStatus'
 import { ChangelogModal } from '@/components/ChangelogModal'
+import { AppVersionSection } from './AppVersionSection'
 import { api } from '@/api/client'
 
 interface ConfigurePageProps {
@@ -391,6 +392,14 @@ export function ConfigurePage({ projectId }: ConfigurePageProps) {
             disabled={updateProject.isPending}
             projectColor={color}
           />
+        </SettingsSection>
+
+        {/* App Version & Updates */}
+        <SettingsSection
+          title="App Version"
+          description="Check for new releases and view the current version of Fleet Command."
+        >
+          <AppVersionSection />
         </SettingsSection>
 
         {/* Danger Zone */}
