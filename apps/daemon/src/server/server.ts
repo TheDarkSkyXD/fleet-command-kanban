@@ -637,6 +637,15 @@ export async function main(): Promise<void> {
 
     eventBus.addClient(res);
     res.write("event: ping\ndata: {}\n\n");
+
+    // Send keepalive pings every 30s to prevent connection timeout
+    const keepalive = setInterval(() => {
+      res.write("event: ping\ndata: {}\n\n");
+    }, 30_000);
+
+    req.on("close", () => {
+      clearInterval(keepalive);
+    });
   });
 
   // Register routes
