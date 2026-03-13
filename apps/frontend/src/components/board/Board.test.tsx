@@ -12,7 +12,9 @@ vi.mock("@/hooks/queries", () => ({
   }),
   useUpdateTicket: () => ({ mutate: vi.fn() }),
   useToggleDisabledPhase: () => ({ mutate: vi.fn() }),
+  useToggleAutomatedPhase: () => ({ mutate: vi.fn() }),
   useUpdateProject: () => ({ mutate: vi.fn() }),
+  useProjectBranch: () => ({ data: null }),
 }));
 
 vi.mock("@/stores/appStore", () => ({
@@ -121,12 +123,11 @@ describe("Board - Add Ticket button placement", () => {
     expect(doneColumn?.dataset.showAddTicket).toBe("false");
   });
 
-  it("right-aligns the board header content (justify-end)", () => {
+  it("does not render a separate board header row", () => {
     const { container } = render(<Board projectId="test-project" />);
 
-    // The board header div should use justify-end (not justify-between)
+    // Board no longer has a separate header div — content is inline in columns
     const header = container.querySelector(".px-4.py-3");
-    expect(header?.className).toMatch(/justify-end/);
-    expect(header?.className).not.toMatch(/justify-between/);
+    expect(header).toBeNull();
   });
 });
