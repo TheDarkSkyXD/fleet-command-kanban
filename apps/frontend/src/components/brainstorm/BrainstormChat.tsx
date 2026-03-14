@@ -87,6 +87,12 @@ export function BrainstormChat({
     const conversationId = msg.conversationId
     const options = msg.options
 
+    // Notifications while waiting = show in thinking indicator, don't add as message
+    if (messageType === 'notification' && isWaitingForResponse) {
+      setCurrentActivity(text)
+      return
+    }
+
     // Check if message already exists (by conversationId for questions, or text+timestamp for others)
     setMessages((prev) => {
       if (conversationId) {
@@ -113,7 +119,7 @@ export function BrainstormChat({
         }
       ]
     })
-  }, [brainstormId]))
+  }, [brainstormId, isWaitingForResponse]))
 
   // Subscribe to session ended events for error recovery only
   useSessionEnded(useCallback((data: { brainstormId?: string; exitCode?: number; status?: string }) => {

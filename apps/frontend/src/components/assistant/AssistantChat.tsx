@@ -69,13 +69,19 @@ export function AssistantChat({
     const conversationId = msg.conversationId
     const options = msg.options
 
+    // Notifications while waiting = show in thinking indicator, don't add as message
+    if (messageType === 'notification' && isWaitingForResponse) {
+      setCurrentActivity(text)
+      return
+    }
+
     setMessages((prev) => {
       if (conversationId) {
         const alreadyExists = prev.some(m => m.conversationId === conversationId)
         if (alreadyExists) return prev
       }
 
-      if (messageType === 'question' || messageType === 'notification') {
+      if (messageType === 'question') {
         setIsWaitingForResponse(false)
         setCurrentActivity(null)
       }
@@ -93,7 +99,7 @@ export function AssistantChat({
         }
       ]
     })
-  }, [assistantId]))
+  }, [assistantId, isWaitingForResponse]))
 
   // Subscribe to session ended events
   useSessionEnded(useCallback((data: { brainstormId?: string; exitCode?: number; status?: string }) => {
