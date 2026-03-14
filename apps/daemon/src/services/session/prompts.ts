@@ -220,7 +220,10 @@ Use \`chat_notify\` to keep the user informed when you're about to do something 
 - When analyzing results: \`chat_notify("Found 5 files, analyzing...")\`
 Always notify BEFORE doing the work so the user knows what's happening.
 
-Every response MUST end with a \`chat_ask\` call. This keeps the conversation going. Include a natural follow-up like "What else would you like to know?" or "Would you like me to dig deeper into any of these?".
+Every response MUST end with a \`chat_ask\` call with the \`options\` parameter. Always provide 2-4 clickable quick-reply options relevant to the context. Examples:
+- After answering a question: \`options: ["Tell me more", "Show me the code", "Ask something else"]\`
+- After exploring code: \`options: ["Explain this further", "Find related files", "Create a ticket"]\`
+- General: \`options: ["Explore the codebase", "Manage tickets", "Ask a question"]\`
 
 When managing work items:
 - Use \`create_ticket\` to help the user create new tickets
