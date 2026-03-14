@@ -515,8 +515,12 @@ function MessageBubble({ message, agentName = 'COO' }: MessageBubbleProps) {
               [&_h2]:text-base [&_h2]:text-white [&_h2]:mt-4 [&_h2]:mb-2
               [&_h3]:text-sm [&_h3]:text-white [&_h3]:mt-3 [&_h3]:mb-1
               [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic
-              [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-border
-              [&_td]:p-2 [&_td]:border-b [&_td]:border-border"
+              [&_table]:w-full [&_table]:text-sm [&_table]:border-collapse [&_table]:rounded-lg [&_table]:overflow-hidden [&_table]:my-3
+              [&_thead]:bg-white/10
+              [&_th]:text-left [&_th]:px-3 [&_th]:py-2 [&_th]:text-white [&_th]:font-semibold [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_th]:border-b [&_th]:border-white/15
+              [&_td]:px-3 [&_td]:py-2 [&_td]:border-b [&_td]:border-white/10 [&_td]:text-white/80
+              [&_tr:last-child_td]:border-b-0
+              [&_tbody_tr:hover]:bg-white/5"
             dangerouslySetInnerHTML={{ __html: renderedContent }}
           />
         ) : (
