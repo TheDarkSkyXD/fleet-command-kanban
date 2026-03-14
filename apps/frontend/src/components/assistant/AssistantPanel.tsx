@@ -11,6 +11,7 @@ import { ConversationHistory } from './ConversationHistory'
 export function AssistantPanel() {
   const assistantPanelOpen = useAppStore((s) => s.assistantPanelOpen)
   const assistantPanelProjectId = useAppStore((s) => s.assistantPanelProjectId)
+  const openAssistantPanel = useAppStore((s) => s.openAssistantPanel)
   const closeAssistantPanel = useAppStore((s) => s.closeAssistantPanel)
   const currentProjectId = useAppStore((s) => s.currentProjectId)
 
@@ -56,6 +57,13 @@ export function AssistantPanel() {
 
     return () => { cancelled = true }
   }, [isOpen, assistantPanelProjectId, assistantId])
+
+  // Follow the current project when panel is open and user navigates
+  useEffect(() => {
+    if (assistantPanelOpen && currentProjectId && currentProjectId !== assistantPanelProjectId) {
+      openAssistantPanel(currentProjectId)
+    }
+  }, [assistantPanelOpen, currentProjectId, assistantPanelProjectId, openAssistantPanel])
 
   // Reset state when project changes
   useEffect(() => {
