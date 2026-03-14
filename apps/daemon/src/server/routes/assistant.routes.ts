@@ -33,6 +33,12 @@ function buildWelcomeMessage(projectName: string): string {
   ].join('\n');
 }
 
+const welcomeOptions = [
+  'Explore the codebase',
+  'Manage tickets & tasks',
+  'Ask a question',
+];
+
 // Prevents duplicate session spawns from concurrent requests (React strict mode, rapid clicks)
 const startingSessionLock = new Set<string>();
 
@@ -72,8 +78,9 @@ export function registerAssistantRoutes(
           const project = projects.get(projectId);
           const projectName = project?.displayName || projectId;
           addMessage(assistant.conversationId, {
-            type: 'notification',
+            type: 'question',
             text: buildWelcomeMessage(projectName),
+            options: welcomeOptions,
           });
         }
       }
@@ -314,8 +321,9 @@ export function registerAssistantRoutes(
       // Seed the welcome message immediately — no session needed for greeting
       const projectName = project.displayName || projectId;
       addMessage(conversation.id, {
-        type: 'notification',
+        type: 'question',
         text: buildWelcomeMessage(projectName),
+        options: welcomeOptions,
       });
 
       res.json({
