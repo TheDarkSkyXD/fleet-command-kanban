@@ -29,7 +29,8 @@ apps/desktop/build/daemon/
 # TypeScript build info
 *.tsbuildinfo
 
-# Potato Cannon local data
+# Fleet Command local data
+.fleet-command/
 .potato/
 .claudetastic/
 
