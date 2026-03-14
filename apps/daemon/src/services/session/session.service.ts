@@ -842,6 +842,8 @@ export class SessionService {
       "--output-format",
       "stream-json",
       "--verbose",
+      "--model",
+      "sonnet",
       "--mcp-config",
       JSON.stringify(mcpConfig),
     ];
