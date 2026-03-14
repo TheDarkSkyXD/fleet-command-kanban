@@ -33,7 +33,16 @@ type SidebarContextProps = {
   toggleSidebar: () => void
 }
 
-const SidebarContext = React.createContext<SidebarContextProps | null>(null)
+// Preserve context identity across Vite HMR re-evaluations.
+// When this module is hot-reloaded (e.g. because button.tsx changed),
+// createContext() would create a new object, breaking provider/consumer pairing.
+const SidebarContext: React.Context<SidebarContextProps | null> = (() => {
+  if (import.meta.hot) {
+    import.meta.hot.data.SidebarContext ??= React.createContext<SidebarContextProps | null>(null)
+    return import.meta.hot.data.SidebarContext
+  }
+  return React.createContext<SidebarContextProps | null>(null)
+})()
 
 function useSidebar() {
   const context = React.useContext(SidebarContext)

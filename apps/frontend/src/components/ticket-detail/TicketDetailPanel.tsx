@@ -59,16 +59,21 @@ export function TicketDetailPanel() {
   const isOnBoardView = !!location.pathname.match(/^\/projects\/[^/]+\/board/)
   const isCorrectProject = currentProjectId === ticketSheetProjectId
 
+  // Use the project where the ticket was opened for all queries (not currentProjectId)
+  // to avoid 404s when the user switches projects while the panel is still "open" in store
+  const queryProjectId = ticketSheetOpen ? ticketSheetProjectId : null
+  const queryTicketId = ticketSheetOpen ? ticketSheetTicketId : null
+
   // Queries
-  const { data: ticket, isLoading } = useTicket(currentProjectId, ticketSheetTicketId)
-  const { data: phases } = useProjectPhases(currentProjectId)
+  const { data: ticket, isLoading } = useTicket(queryProjectId, queryTicketId)
+  const { data: phases } = useProjectPhases(queryProjectId)
   const { data: projects } = useProjects()
   const updateTicket = useUpdateTicket()
 
   // Get current project to access template name
   const currentProject = useMemo(
-    () => projects?.find((p) => p.id === currentProjectId),
-    [projects, currentProjectId]
+    () => projects?.find((p) => p.id === ticketSheetProjectId),
+    [projects, ticketSheetProjectId]
   )
 
   const { data: templateConfig } = useTemplate(currentProject?.template?.name ?? null)
@@ -100,7 +105,7 @@ export function TicketDetailPanel() {
 
   const handlePhaseChange = useCallback(
     (newPhase: string) => {
-      if (!currentProjectId || !ticketSheetTicketId || newPhase === ticket?.phase) return
+      if (!ticketSheetProjectId || !ticketSheetTicketId || newPhase === ticket?.phase) return
 
       // Check if target phase has automation
       const phaseConfig = templateConfig?.phases.find((p) => p.name === newPhase)
@@ -113,26 +118,26 @@ export function TicketDetailPanel() {
         })
       } else {
         updateTicket.mutate({
-          projectId: currentProjectId,
+          projectId: ticketSheetProjectId!,
           ticketId: ticketSheetTicketId,
           updates: { phase: newPhase }
         })
       }
     },
-    [currentProjectId, ticketSheetTicketId, ticket?.phase, templateConfig, updateTicket]
+    [ticketSheetProjectId, ticketSheetTicketId, ticket?.phase, templateConfig, updateTicket]
   )
 
   const handleConfirmMove = useCallback(() => {
-    if (!confirmDialog || !currentProjectId || !ticketSheetTicketId) return
+    if (!confirmDialog || !ticketSheetProjectId || !ticketSheetTicketId) return
 
     updateTicket.mutate({
-      projectId: currentProjectId,
+      projectId: ticketSheetProjectId,
       ticketId: ticketSheetTicketId,
       updates: { phase: confirmDialog.targetPhase }
     })
 
     setConfirmDialog(null)
-  }, [confirmDialog, currentProjectId, ticketSheetTicketId, updateTicket])
+  }, [confirmDialog, ticketSheetProjectId, ticketSheetTicketId, updateTicket])
 
   const isOpen = ticketSheetOpen && isOnBoardView && isCorrectProject
 
@@ -251,7 +256,7 @@ export function TicketDetailPanel() {
 
                 <TabsContent value="activity" className="mt-0 flex-1 flex flex-col min-h-0">
                   <ActivityTab
-                    projectId={currentProjectId!}
+                    projectId={ticketSheetProjectId!}
                     ticketId={ticket.id}
                     currentPhase={ticket.phase}
                     history={ticket.history}
@@ -262,7 +267,7 @@ export function TicketDetailPanel() {
                   <ScrollArea className="h-full">
                     <div className="px-4 pb-4">
                       <DetailsTab
-                        projectId={currentProjectId!}
+                        projectId={ticketSheetProjectId!}
                         ticketId={ticket.id}
                         description={ticket.description}
                         history={ticket.history}
@@ -274,7 +279,7 @@ export function TicketDetailPanel() {
                   <ScrollArea className="h-full">
                     <div className="px-4 pb-4">
                       <SettingsTab
-                        projectId={currentProjectId!}
+                        projectId={ticketSheetProjectId!}
                         ticketId={ticket.id}
                         ticket={{ phase: ticket.phase, archived: ticket.archived }}
                         onDeleted={closeTicketSheet}

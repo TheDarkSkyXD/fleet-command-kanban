@@ -27,6 +27,7 @@ export interface TicketMessage {
   conversationId?: string
   options?: string[]
   timestamp: string
+  answeredAt?: string
   artifact?: {
     filename: string
     description?: string

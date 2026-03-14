@@ -299,7 +299,7 @@ export function BrainstormChat({
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          <h3 className="text-text-secondary font-semibold text-[13px] truncate">
+          <h3 className="text-white font-semibold text-[13px] truncate">
             {brainstormName}
           </h3>
         </div>
@@ -467,7 +467,7 @@ function MessageBubble({ message, agentName = 'COO' }: MessageBubbleProps) {
         )}
       >
         {(isQuestion || isNotification) && (
-          <div className="flex items-center gap-2 mb-2 text-text-muted">
+          <div className="flex items-center gap-2 mb-2 text-white">
             <Bot className="h-3 w-3" />
             <span className="text-xs font-medium">{agentName}</span>
           </div>
@@ -480,21 +480,21 @@ function MessageBubble({ message, agentName = 'COO' }: MessageBubbleProps) {
         )}
         {(isQuestion || isNotification) && renderedContent ? (
           <div
-            className="prose prose-sm prose-invert max-w-none text-text-primary break-words
+            className="prose prose-sm prose-invert max-w-none text-white break-words
               [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0
               [&_a]:text-accent [&_a]:no-underline hover:[&_a]:underline
               [&_code]:bg-bg-tertiary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded
               [&_pre]:bg-bg-tertiary [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto
-              [&_h1]:text-lg [&_h1]:text-text-primary [&_h1]:mt-4 [&_h1]:mb-2
-              [&_h2]:text-base [&_h2]:text-text-primary [&_h2]:mt-4 [&_h2]:mb-2
-              [&_h3]:text-sm [&_h3]:text-text-primary [&_h3]:mt-3 [&_h3]:mb-1
+              [&_h1]:text-lg [&_h1]:text-white [&_h1]:mt-4 [&_h1]:mb-2
+              [&_h2]:text-base [&_h2]:text-white [&_h2]:mt-4 [&_h2]:mb-2
+              [&_h3]:text-sm [&_h3]:text-white [&_h3]:mt-3 [&_h3]:mb-1
               [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic
               [&_table]:w-full [&_th]:text-left [&_th]:p-2 [&_th]:border-b [&_th]:border-border
               [&_td]:p-2 [&_td]:border-b [&_td]:border-border"
             dangerouslySetInnerHTML={{ __html: renderedContent }}
           />
         ) : (
-          <p className="text-sm whitespace-pre-wrap break-words text-text-primary">
+          <p className="text-sm whitespace-pre-wrap break-words text-white">
             <Linkify text={message.text || ''} />
           </p>
         )}
@@ -512,7 +512,7 @@ function ThinkingIndicator({ activity }: { activity?: string | null }) {
   return (
     <div className="flex justify-start">
       <div className="thinking-shimmer bg-bg-tertiary rounded-lg rounded-bl-sm px-4 py-3 max-w-[85%]">
-        <div className="flex items-center gap-2 text-text-muted">
+        <div className="flex items-center gap-2 text-white">
           <Brain className="h-3 w-3 animate-pulse" />
           <span className="text-xs font-medium">
             {activity || 'Thinking'}

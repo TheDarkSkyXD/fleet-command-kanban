@@ -231,7 +231,7 @@ export function ArtifactChat({
       {/* Header */}
       <div className="flex items-center gap-2 p-3 border-b border-border">
         <MessageSquare className="h-4 w-4 text-text-muted" />
-        <h3 className="text-text-secondary font-semibold text-[13px]">
+        <h3 className="text-white font-semibold text-[13px]">
           Ask about this artifact
         </h3>
         {sessionActive && (
@@ -364,7 +364,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
             <span className="text-xs font-medium">Error</span>
           </div>
         )}
-        <p className="text-sm whitespace-pre-wrap break-words">
+        <p className="text-sm whitespace-pre-wrap break-words text-white">
           <Linkify text={message.text || ''} />
         </p>
         {message.timestamp && (

@@ -1043,6 +1043,7 @@ export class SessionService {
     projectId: string,
     ticketId: string,
     userResponse: string,
+    options?: { skipConversationUpdate?: boolean },
   ): Promise<string> {
     console.log(`[resumeSuspendedTicket] Resuming suspended ticket ${ticketId}`);
 
@@ -1056,12 +1057,10 @@ export class SessionService {
     // Read pending question and get Claude session ID for --resume
     const pendingQuestion = readQuestion(projectId, ticketId);
     const claudeSessionId = pendingQuestion?.claudeSessionId || getLatestClaudeSessionIdForTicket(ticketId);
-    if (!claudeSessionId) {
-      throw new Error(`No Claude session ID found for ticket ${ticketId} — cannot resume`);
-    }
 
     // Mark the pending question as answered in conversation store
-    if (ticket.conversationId) {
+    // (skip if the caller already handled this, e.g. the /input endpoint)
+    if (!options?.skipConversationUpdate && ticket.conversationId) {
       const { answerQuestion, getPendingQuestion: getConvPendingQuestion, addMessage } = await import(
         "../../stores/conversation.store.js"
       );
@@ -1081,8 +1080,8 @@ export class SessionService {
     clearQuestion(projectId, ticketId);
     clearResponse(projectId, ticketId);
 
-    // Emit SSE event for the user's response (only if there was a pending question, to avoid duplicates from answer bot)
-    if (pendingQuestion) {
+    // Emit SSE event for the user's response (only if there was a pending question and we handled conversation update)
+    if (!options?.skipConversationUpdate && pendingQuestion) {
       eventBus.emit("ticket:message", {
         projectId,
         ticketId,
@@ -1090,20 +1089,92 @@ export class SessionService {
       });
     }
 
-    // Create stored session record
-    const storedSession = createStoredSession({
-      projectId,
-      ticketId,
-      claudeSessionId,
-      agentSource: "resume",
-      phase: ticket.phase,
-    });
-
     const branchPrefix = project.branchPrefix || "fleet";
     const needsWorktree = await phaseRequiresWorktree(projectId, ticket.phase);
     const worktreePath = needsWorktree
       ? await ensureWorktree(project.path, ticketId, branchPrefix, ticket.baseBranch)
       : project.path;
+
+    // If we have a Claude session ID, resume the existing session.
+    // Otherwise, fall back to a fresh session with full agent context + conversation history.
+    if (claudeSessionId) {
+      const storedSession = createStoredSession({
+        projectId,
+        ticketId,
+        claudeSessionId,
+        agentSource: "resume",
+        phase: ticket.phase,
+      });
+
+      const meta: SessionMeta = {
+        projectId,
+        ticketId,
+        ticketTitle: ticket.title,
+        phase: ticket.phase,
+        worktreePath,
+        branchName: `${branchPrefix}/${ticketId}`,
+        startedAt: new Date().toISOString(),
+        status: "running",
+        agentType: "resume",
+        stage: 0,
+      };
+
+      // With --resume, Claude already has the full conversation context.
+      // The user's response is the new prompt input.
+      return this.spawnClaudeSession(
+        storedSession.id,
+        meta,
+        userResponse,
+        worktreePath,
+        projectId,
+        ticketId,
+        "",
+        "resume",
+        ticket.phase,
+        project.path,
+        0,
+        undefined,
+        undefined,
+        claudeSessionId, // triggers --resume flag
+      );
+    }
+
+    // Fallback: no Claude session ID available (CLI didn't emit session_id).
+    // Start a fresh session with the full agent prompt + conversation context.
+    console.log(`[resumeSuspendedTicket] No Claude session ID for ${ticketId}, falling back to fresh session`);
+
+    // Find the agent source from the latest session record
+    const { getSessionsByTicket } = await import("../../stores/session.store.js");
+    const sessions = getSessionsByTicket(ticketId);
+    const lastSession = sessions[sessions.length - 1];
+    const agentSource = lastSession?.agentSource || pendingQuestion?.phase || ticket.phase;
+
+    // Load agent definition to get full prompt
+    const agentDefinition = await tryLoadAgentDefinition(projectId, agentSource);
+    const images = await listTicketImages(projectId, ticketId);
+
+    // Build the full prompt with agent instructions + ticket context
+    let prompt = agentDefinition?.prompt || "";
+    const ticketContext = await buildAgentPrompt(
+      projectId, ticketId, ticket, ticket.phase,
+      { source: agentSource } as AgentWorker,
+      images,
+    );
+    prompt += `\n\n---\n\n${ticketContext}`;
+
+    // Inject conversation context so the agent knows what was asked and answered
+    if (pendingQuestion) {
+      prompt += `\n\n## Resuming Conversation\n\nThe previous session asked the user a question and they responded.\n\n**Previous question:** ${pendingQuestion.question}\n\n**User's response:** ${userResponse}\n\nContinue from where the previous session left off. Do NOT re-ask the same question — the user has already answered it above.`;
+    } else {
+      prompt += `\n\n## User's Response\n\n${userResponse}\n\nContinue from where the previous session left off.`;
+    }
+
+    const storedSession = createStoredSession({
+      projectId,
+      ticketId,
+      agentSource: "resume-fresh",
+      phase: ticket.phase,
+    });
 
     const meta: SessionMeta = {
       projectId,
@@ -1114,13 +1185,9 @@ export class SessionService {
       branchName: `${branchPrefix}/${ticketId}`,
       startedAt: new Date().toISOString(),
       status: "running",
-      agentType: "resume",
+      agentType: "resume-fresh",
       stage: 0,
     };
-
-    // With --resume, Claude already has the full conversation context.
-    // The user's response is the new prompt input.
-    const prompt = userResponse;
 
     return this.spawnClaudeSession(
       storedSession.id,
@@ -1130,13 +1197,10 @@ export class SessionService {
       projectId,
       ticketId,
       "",
-      "resume",
+      "resume-fresh",
       ticket.phase,
       project.path,
       0,
-      undefined,
-      undefined,
-      claudeSessionId, // triggers --resume flag
     );
   }
 

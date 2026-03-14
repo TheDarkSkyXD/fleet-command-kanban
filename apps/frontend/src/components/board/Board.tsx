@@ -68,6 +68,24 @@ function phaseHasAnswerBot(phaseConfig: TemplatePhase | undefined): boolean {
  * - Has an answerBot worker
  * First and last phases cannot be automated.
  */
+/**
+ * Checks if a phase is skippable (marked in template, separate from automation).
+ * Skippable phases bypass their workers entirely when toggled.
+ * First and last phases cannot be skipped.
+ */
+function isPhaseSkippable(
+  phaseConfig: TemplatePhase | undefined,
+  phaseName: string,
+  allPhases: string[]
+): boolean {
+  if (allPhases.length > 0) {
+    if (phaseName === allPhases[0] || phaseName === allPhases[allPhases.length - 1]) {
+      return false
+    }
+  }
+  return !!phaseConfig?.skippable
+}
+
 function canAutomate(
   phaseConfig: TemplatePhase | undefined,
   phaseName: string,
@@ -393,6 +411,7 @@ export function Board({ projectId }: BoardProps) {
                 {phases?.map((phase) => {
                   const phaseConfig = templateConfig?.phases.find((p) => p.name === phase)
                   const canAutomatePhase = canAutomate(phaseConfig, phase, phases)
+                  const skippable = isPhaseSkippable(phaseConfig, phase, phases)
                   const isAutomated = currentProject?.automatedPhases?.includes(phase) ?? false
                   const isMigrating = currentProject?.automatedPhaseMigration ?? false
                   const wipLimit = currentProject?.wipLimits?.[phase]
@@ -405,9 +424,11 @@ export function Board({ projectId }: BoardProps) {
                       projectId={projectId}
                       showAddTicket={phase === phases?.[0]}
                       canAutomate={canAutomatePhase}
+                      isSkippable={skippable}
                       isAutomated={isAutomated}
                       isMigrating={isMigrating}
                       onToggleAutomated={canAutomatePhase ? () => handleToggleAutomated(phase) : undefined}
+                      onToggleSkipped={skippable ? () => handleToggleAutomated(phase) : undefined}
                       swimlaneColor={currentProject?.swimlaneColors?.[phase]}
                       onColorChange={(color) => handleSwimlaneColorChange(phase, color)}
                       phaseDescription={phaseConfig?.description}

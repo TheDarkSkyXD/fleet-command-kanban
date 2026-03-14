@@ -617,6 +617,13 @@ export async function main(): Promise<void> {
     });
   });
 
+  // Graceful shutdown endpoint (used by Electron desktop app on quit)
+  app.post("/api/shutdown", (_req, res) => {
+    res.json({ status: "shutting_down" });
+    // Defer shutdown slightly so the HTTP response is sent first
+    setTimeout(() => shutdown(), 100);
+  });
+
   // Claude CLI status check (cached — avoids repeated slow spawnSync calls)
   app.get("/api/claude-status", (_req, res) => {
     try {

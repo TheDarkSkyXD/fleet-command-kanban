@@ -21,7 +21,6 @@ app.on('child-process-gone', (_event, details) => {
 
 let daemonProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
-let weSpawnedDaemon = false
 let isQuitting = false
 
 // Ensure only one instance runs at a time
@@ -266,22 +265,11 @@ async function startDaemon(): Promise<void> {
 
   daemonProcess.on('exit', (code, signal) => {
     console.log(`[daemon] exited with code=${code} signal=${signal}`)
-    // If daemon exited quickly (e.g. "already running"), we didn't really spawn it
-    if (code !== 0) {
-      weSpawnedDaemon = false
-    }
     daemonProcess = null
   })
 
-  weSpawnedDaemon = true
-
   // Give daemon a moment to start
   await new Promise(r => setTimeout(r, 2000))
-
-  // If daemon exited during the wait (e.g. lock conflict), clear the flag
-  if (!daemonProcess) {
-    weSpawnedDaemon = false
-  }
 }
 
 async function waitForHealth(): Promise<boolean> {
@@ -429,18 +417,13 @@ app.on('before-quit', () => {
   }
 })
 
-app.on('will-quit', (event) => {
-  // Only clean up daemon processes that we spawned ourselves.
-  // NEVER kill parent process trees — on Windows this can kill explorer.exe
-  // and cause a system-wide black screen requiring a restart.
-  if (!weSpawnedDaemon) return
-
+app.on('will-quit', () => {
+  // Always shut down the daemon when the desktop app quits.
+  // The daemon is integral to the desktop app — if the UI closes, the daemon should stop.
+  // This also handles orphaned daemons from previous force-closes.
   const pid = daemonProcess?.pid ?? getDaemonPidFromFile()
   if (!pid || pid <= 1) return
 
-  // Graceful shutdown: send SIGTERM so the daemon can clean up its children
-  // (Claude PTY sessions, MCP proxies, system agents), close DB, remove PID file.
-  // The daemon has a 10-second internal shutdown timeout.
   gracefulShutdownDaemon(pid)
 })
 
@@ -461,40 +444,44 @@ function getDaemonPidFromFile(): number | null {
 
 /**
  * Graceful daemon shutdown sequence:
- * 1. Send SIGTERM to the daemon's process group (daemon + all its children)
- * 2. Wait briefly for graceful exit (daemon sends SIGTERM to Claude sessions internally)
- * 3. Force kill anything still alive
- *
- * Because the daemon is spawned with detached:true, it has its own process group,
- * so -pid targets exactly: daemon + Claude PTY sessions + MCP proxies.
+ * 1. Hit the daemon's HTTP shutdown endpoint (reliable on all platforms, especially
+ *    Windows where signals to Node.js console processes are unreliable)
+ * 2. Fall back to SIGTERM on Unix if HTTP fails
+ * 3. Wait briefly for graceful exit (daemon sends SIGTERM to Claude sessions internally)
+ * 4. Force kill anything still alive
  */
 function gracefulShutdownDaemon(pid: number): void {
-  // Step 1: Graceful SIGTERM
-  if (process.platform === 'win32') {
-    // On Windows, taskkill without /F sends WM_CLOSE to GUI apps and
-    // CTRL_BREAK_EVENT to console apps, allowing graceful shutdown.
-    spawnSync('taskkill', ['/T', '/PID', String(pid)], {
-      stdio: 'ignore',
-      timeout: 3000
-    })
-  } else {
-    // On Unix, send SIGTERM to the entire process group (daemon is group leader
-    // because we spawned with detached:true which calls setsid).
-    try {
-      process.kill(-pid, 'SIGTERM')
-    } catch {
-      try { process.kill(pid, 'SIGTERM') } catch { /* already dead */ }
+  // Step 1: Try HTTP shutdown (works reliably on all platforms)
+  // Use spawnSync + node to make a synchronous HTTP call since will-quit is sync.
+  const shutdownScript = `
+    const http = require('http');
+    const req = http.request({hostname:'localhost',port:${DEFAULT_PORT},path:'/api/shutdown',method:'POST'}, () => process.exit(0));
+    req.on('error', () => process.exit(0));
+    req.setTimeout(2000, () => { req.destroy(); process.exit(0); });
+    req.end();
+  `
+  spawnSync('node', ['-e', shutdownScript], { stdio: 'ignore', timeout: 3000 })
+
+  // Step 2: If HTTP didn't work, try OS-level signals as fallback
+  if (isProcessAlive(pid)) {
+    if (process.platform === 'win32') {
+      spawnSync('taskkill', ['/T', '/PID', String(pid)], {
+        stdio: 'ignore',
+        timeout: 3000
+      })
+    } else {
+      try {
+        process.kill(-pid, 'SIGTERM')
+      } catch {
+        try { process.kill(pid, 'SIGTERM') } catch { /* already dead */ }
+      }
     }
   }
 
-  // Step 2: Wait up to 5 seconds for daemon to finish its graceful shutdown.
-  // The daemon internally waits up to 8s for Claude sessions to exit, but we
-  // give it 5s here — if it's still alive, we force kill.
+  // Step 3: Wait up to 5 seconds for daemon to finish its graceful shutdown.
   if (isProcessAlive(pid)) {
     const deadline = Date.now() + 5000
     while (Date.now() < deadline && isProcessAlive(pid)) {
-      // Synchronous sleep: ping on Windows (timeout cmd needs a console),
-      // sleep on Unix. Window is already closed so blocking is fine.
       if (process.platform === 'win32') {
         spawnSync('ping', ['-n', '2', '127.0.0.1'], { stdio: 'ignore', timeout: 2000 })
       } else {
@@ -503,7 +490,7 @@ function gracefulShutdownDaemon(pid: number): void {
     }
   }
 
-  // Step 3: Force kill any survivors
+  // Step 4: Force kill any survivors
   if (isProcessAlive(pid)) {
     console.warn('[electron] Daemon still alive after graceful shutdown, force killing')
     forceKillProcessTree(pid)

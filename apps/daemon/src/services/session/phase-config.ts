@@ -98,8 +98,10 @@ export async function resolveTargetPhase(
     const isManualCheckpoint =
       phase.transitions?.manual === true &&
       (!phase.workers || phase.workers.length === 0);
-    // Only skip phases that are automated AND are pure manual checkpoints
-    if (isAutomated && isManualCheckpoint) {
+    // Skip phases that are automated AND are either:
+    // - pure manual checkpoints (no workers), OR
+    // - explicitly marked skippable in the template (e.g. Pull Requests)
+    if (isAutomated && (isManualCheckpoint || phase.skippable)) {
       continue;
     }
     return phase.name;

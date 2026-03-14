@@ -21,12 +21,12 @@ import {
   appendConversation,
 } from "../../stores/ticket.store.js";
 import { DEFAULT_PHASES } from "../../types/index.js";
-import { readQuestion, writeResponse } from "../../stores/chat.store.js";
+import { readQuestion, writeResponse, clearQuestion, clearResponse } from "../../stores/chat.store.js";
 import { getWipStatus } from "../../services/session/wip.js";
 import { chatService } from "../../services/chat.service.js";
 import { updateBrainstorm } from "../../stores/brainstorm.store.js";
 import { getActiveSessionForTicket } from "../../stores/session.store.js";
-import { getMessages } from "../../stores/conversation.store.js";
+import { getMessages, getPendingQuestion, answerQuestion, addMessage } from "../../stores/conversation.store.js";
 import type { SessionService } from "../../services/session/index.js";
 import type { Project } from "../../types/config.types.js";
 import type { TicketPhase } from "../../types/ticket.types.js";
@@ -484,6 +484,29 @@ export function registerTicketRoutes(
           return;
         }
 
+        // Always update conversation state immediately so it persists
+        // even if the user navigates away before session resume completes.
+        // This fixes a race condition where the session is still exiting
+        // (after askAsync) when the user answers — in that case the old
+        // code skipped resumeSuspendedTicket and never persisted the answer.
+        const ticket = await getTicket(projectId, ticketId);
+        if (ticket?.conversationId) {
+          const pendingQ = getPendingQuestion(ticket.conversationId);
+          if (pendingQ) {
+            answerQuestion(pendingQ.id);
+          }
+          addMessage(ticket.conversationId, {
+            type: "user",
+            text: message,
+          });
+          eventBus.emit("ticket:message", {
+            projectId,
+            ticketId,
+            message: { type: "user", text: message, timestamp: new Date().toISOString() },
+          });
+        }
+
+        // Write response for IPC (session resume reads this)
         writeResponse(projectId, ticketId, { answer: message });
 
         // Check if there's an active session for this ticket.
@@ -500,6 +523,7 @@ export function registerTicketRoutes(
                 projectId,
                 ticketId,
                 message,
+                { skipConversationUpdate: true },
               );
               console.log(`[input] Spawned resumed session ${newSessionId} for suspended ticket ${ticketId}`);
               res.json({ success: true, sessionId: newSessionId, resumed: true });
