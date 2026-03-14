@@ -298,7 +298,7 @@ The user has already shared what they want to brainstorm:
 
 Acknowledge their idea and ask your first clarifying question. Do NOT ask "what would you like to brainstorm?" - they already told you.`;
   } else {
-    instructions += `Begin by asking what they'd like to brainstorm.`;
+    instructions += `Begin by greeting the user and asking what they'd like to brainstorm. Include options like ["Feature idea", "Technical question", "Bug or issue", "Just exploring"] so they can quickly choose.`;
   }
 
   return `
