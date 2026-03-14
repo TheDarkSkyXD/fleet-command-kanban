@@ -1,6 +1,6 @@
 {
   "name": "fleet-command-monorepo",
-  "version": "4.5.4",
+  "version": "4.5.5",
   "private": true,
   "license": "SEE LICENSE IN LICENSE.md",
   "type": "module",
