@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
   "appId": "com.fleet-command.app",
   "productName": "Fleet Command Kanban",
-  "artifactName": "${productName}-Setup-${version}.${ext}",
+  "artifactName": "Fleet-Command-Kanban-Setup-${version}.${ext}",
   "directories": {
     "output": "release"
   },
