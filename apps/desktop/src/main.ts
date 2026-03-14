@@ -3,7 +3,8 @@ import path from 'path'
 import fs from 'fs'
 import { spawn, spawnSync, ChildProcess } from 'child_process'
 import { DEFAULT_PORT, DEFAULT_VITE_PORT } from '@fleet-command/shared'
-import { autoUpdater } from 'electron-updater'
+import pkg from 'electron-updater'
+const { autoUpdater } = pkg
 
 const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 
