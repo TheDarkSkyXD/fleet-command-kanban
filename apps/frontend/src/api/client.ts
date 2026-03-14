@@ -85,6 +85,12 @@ export const api = {
       body: JSON.stringify({ phaseId, automated })
     }),
 
+  toggleSkippedPhase: (projectId: string, phaseId: string, skipped: boolean) =>
+    request<Project>(`/api/projects/${encodeURIComponent(projectId)}/skipped-phases`, {
+      method: 'PATCH',
+      body: JSON.stringify({ phaseId, skipped })
+    }),
+
   getProjectBranch: (projectId: string) =>
     request<{ currentBranch: string | null; branches: string[] }>(
       `/api/projects/${encodeURIComponent(projectId)}/git-branch`

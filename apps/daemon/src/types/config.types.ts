@@ -43,6 +43,7 @@ export interface Project {
   };
   automatedPhases?: string[];           // array of phase names that are automated
   automatedPhaseMigration?: boolean;    // true while migration is in progress
+  skippedPhases?: string[];             // array of phase names that are skipped
   swimlaneColors?: Record<string, string>;  // phase name -> hex color
   wipLimits?: Record<string, number>;
   branchPrefix?: string;  // Custom branch prefix (default: 'fleet')

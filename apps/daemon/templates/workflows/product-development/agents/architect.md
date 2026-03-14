@@ -22,12 +22,13 @@ Design systems that are:
 ## The Process
 
 [ ] Step 1 - Read refinement.md (use skill: `fleet-command:read-artifacts`)
-[ ] Step 2 - Check for architecture-critique-\*.md (use skill: `fleet-command:read-artifacts` to list/read)
-[ ] Step 3 - Explore codebase for existing patterns
-[ ] Step 4 - Identify where new code should live
-[ ] Step 5 - Design architecture following existing patterns
-[ ] Step 6 - If critique exists: address each issue raised
-[ ] Step 7 - Save architecture-draft.md
+[ ] Step 2 - Read research-notes.md if available (use skill: `fleet-command:read-artifacts`)
+[ ] Step 3 - Check for architecture-critique-\*.md (use skill: `fleet-command:read-artifacts` to list/read)
+[ ] Step 4 - Explore codebase for existing patterns
+[ ] Step 5 - Identify where new code should live
+[ ] Step 6 - Design architecture following existing patterns
+[ ] Step 7 - If critique exists: address each issue raised
+[ ] Step 8 - Save architecture-draft.md
 
 ## Handling Critiques (Ralph Loop)
 

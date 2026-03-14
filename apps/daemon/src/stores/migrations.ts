@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-const CURRENT_SCHEMA_VERSION = 16;
+const CURRENT_SCHEMA_VERSION = 17;
 
 /**
  * Run database migrations.
@@ -71,6 +71,10 @@ export function runMigrations(db: Database.Database): void {
 
   if (version < 16) {
     migrateV16(db);
+  }
+
+  if (version < 17) {
+    migrateV17(db);
   }
 
   db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
@@ -620,4 +624,16 @@ function migrateV16(db: Database.Database): void {
 
   // Delete migrated assistant rows from brainstorms
   db.exec(`DELETE FROM brainstorms WHERE is_assistant = 1`);
+}
+
+/**
+ * V17: Add skipped_phases column to projects table
+ */
+function migrateV17(db: Database.Database): void {
+  const columns = db.pragma("table_info(projects)") as { name: string }[];
+  const colNames = new Set(columns.map((c) => c.name));
+
+  if (!colNames.has("skipped_phases")) {
+    db.exec(`ALTER TABLE projects ADD COLUMN skipped_phases TEXT`);
+  }
 }

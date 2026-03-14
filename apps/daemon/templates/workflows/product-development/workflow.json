@@ -10,6 +10,13 @@
       "description": "AI agents refine your brainstorm into clear requirements with adversarial review",
       "workers": [
         {
+          "id": "web-research-agent",
+          "type": "agent",
+          "source": "agents/web-research.md",
+          "description": "Researches relevant libraries, APIs, and patterns before refinement",
+          "model": "sonnet"
+        },
+        {
           "id": "refinement-ralph-loop",
           "type": "ralphLoop",
           "description": "Creates refinement draft from brainstorm",

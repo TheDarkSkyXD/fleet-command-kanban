@@ -17,6 +17,7 @@ import {
   useUpdateTicket,
   useProjects,
   useToggleAutomatedPhase,
+  useToggleSkippedPhase,
   useUpdateProject,
   useProjectBranch
 } from '@/hooks/queries'
@@ -69,8 +70,10 @@ function phaseHasAnswerBot(phaseConfig: TemplatePhase | undefined): boolean {
  * First and last phases cannot be automated.
  */
 /**
- * Checks if a phase is skippable (marked in template, separate from automation).
- * Skippable phases bypass their workers entirely when toggled.
+ * Checks if a phase can be skipped.
+ * A phase is skippable if it's marked skippable in the template,
+ * OR if it can be automated (manual checkpoint / answerBot).
+ * This lets the user choose between skip or automate on any eligible phase.
  * First and last phases cannot be skipped.
  */
 function isPhaseSkippable(
@@ -83,7 +86,13 @@ function isPhaseSkippable(
       return false
     }
   }
-  return !!phaseConfig?.skippable
+  if (!phaseConfig) return false
+
+  if (phaseConfig.skippable) return true
+
+  // Manual checkpoints and answerBot phases can also be skipped
+  const isManualCheckpoint = !!(phaseConfig.transitions?.manual) && !phaseHasAutomation(phaseConfig)
+  return isManualCheckpoint || phaseHasAnswerBot(phaseConfig)
 }
 
 function canAutomate(
@@ -131,6 +140,7 @@ export function Board({ projectId }: BoardProps) {
   // Mutations
   const updateTicket = useUpdateTicket()
   const toggleAutomatedPhase = useToggleAutomatedPhase()
+  const toggleSkippedPhase = useToggleSkippedPhase()
   const updateProject = useUpdateProject()
 
   const { data: branchData } = useProjectBranch(projectId)
@@ -149,6 +159,21 @@ export function Board({ projectId }: BoardProps) {
       })
     },
     [projectId, currentProject, toggleAutomatedPhase]
+  )
+
+  const handleToggleSkipped = useCallback(
+    (phaseName: string) => {
+      if (!currentProject) return
+
+      const isCurrentlySkipped = currentProject.skippedPhases?.includes(phaseName) ?? false
+
+      toggleSkippedPhase.mutate({
+        projectId,
+        phaseId: phaseName,
+        skipped: !isCurrentlySkipped
+      })
+    },
+    [projectId, currentProject, toggleSkippedPhase]
   )
 
   const handleSwimlaneColorChange = useCallback(
@@ -426,9 +451,10 @@ export function Board({ projectId }: BoardProps) {
                       canAutomate={canAutomatePhase}
                       isSkippable={skippable}
                       isAutomated={isAutomated}
+                      isSkipped={currentProject?.skippedPhases?.includes(phase) ?? false}
                       isMigrating={isMigrating}
                       onToggleAutomated={canAutomatePhase ? () => handleToggleAutomated(phase) : undefined}
-                      onToggleSkipped={skippable ? () => handleToggleAutomated(phase) : undefined}
+                      onToggleSkipped={skippable ? () => handleToggleSkipped(phase) : undefined}
                       swimlaneColor={currentProject?.swimlaneColors?.[phase]}
                       onColorChange={(color) => handleSwimlaneColorChange(phase, color)}
                       phaseDescription={phaseConfig?.description}

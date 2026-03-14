@@ -21,10 +21,21 @@ use the skill: `fleet-command:notify-user` to announce:
 ## The Process
 
 [ ] Step 1 - Read brainstorm context
-[ ] Step 2 - Explore codebase for context
-[ ] Step 3 - Ask questions (one at a time) unitl you have enough clarity
-[ ] Step 4 - Summarize Understanding & Confirm with user
-[ ] Step 5 - Save refinement-draft.md artifact.
+[ ] Step 2 - Read research-notes.md if available (use skill: `fleet-command:read-artifacts`)
+[ ] Step 3 - Explore codebase for context
+[ ] Step 4 - Ask questions (one at a time) until you have enough clarity
+[ ] Step 5 - Summarize Understanding & Confirm with user
+[ ] Step 6 - Save refinement-draft.md artifact.
+
+## Using Research Notes
+
+If `research-notes.md` exists, use it to:
+- Ask more informed questions (e.g., "Research found libraries X and Y for this—do you have a preference?")
+- Surface risks or constraints discovered during research
+- Avoid asking questions that research already answers
+- Include relevant findings in the refinement document under Technical Constraints
+
+**Do NOT repeat the research verbatim.** Use it to ask better questions and make better recommendations.
 
 ## Information to Gather
 

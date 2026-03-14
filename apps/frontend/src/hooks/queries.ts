@@ -74,6 +74,25 @@ export function useToggleAutomatedPhase() {
   })
 }
 
+export function useToggleSkippedPhase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      phaseId,
+      skipped
+    }: {
+      projectId: string
+      phaseId: string
+      skipped: boolean
+    }) => api.toggleSkippedPhase(projectId, phaseId, skipped),
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['tickets', projectId] })
+    }
+  })
+}
+
 export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({

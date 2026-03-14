@@ -13,6 +13,7 @@ vi.mock("@/hooks/queries", () => ({
   useUpdateTicket: () => ({ mutate: vi.fn() }),
   useToggleDisabledPhase: () => ({ mutate: vi.fn() }),
   useToggleAutomatedPhase: () => ({ mutate: vi.fn() }),
+  useToggleSkippedPhase: () => ({ mutate: vi.fn() }),
   useUpdateProject: () => ({ mutate: vi.fn() }),
   useProjectBranch: () => ({ data: null }),
 }));

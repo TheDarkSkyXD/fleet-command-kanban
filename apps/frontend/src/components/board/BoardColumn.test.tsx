@@ -113,7 +113,7 @@ describe("BoardColumn tooltip", () => {
     const botButton = getBotButton();
     await user.hover(botButton);
 
-    const elements = await screen.findAllByText("Automated");
+    const elements = await screen.findAllByText("Disable automation");
     expect(elements).toBeDefined();
     expect(elements.length).toBeGreaterThan(0);
   });

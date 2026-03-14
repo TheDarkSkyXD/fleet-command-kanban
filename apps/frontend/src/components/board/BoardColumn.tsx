@@ -21,6 +21,7 @@ interface BoardColumnProps {
   canAutomate?: boolean
   isSkippable?: boolean
   isAutomated?: boolean
+  isSkipped?: boolean
   isMigrating?: boolean
   onToggleAutomated?: () => void
   onToggleSkipped?: () => void
@@ -39,6 +40,7 @@ export function BoardColumn({
   canAutomate,
   isSkippable,
   isAutomated,
+  isSkipped,
   isMigrating,
   onToggleAutomated,
   onToggleSkipped,
@@ -60,14 +62,11 @@ export function BoardColumn({
     disabled: isFlipped
   })
 
-  // For skippable phases, the "automated" state means "skipped"
-  const isSkipped = isSkippable && isAutomated
-
   // Determine tooltip text
   const getAutomateTooltipText = () => {
     if (isMigrating) return 'Migration in progress...'
-    if (isAutomated) return phaseDescription ?? 'Automated'
-    return phaseDescription ?? 'Enable automation'
+    if (isAutomated) return phaseDescription ?? 'Disable automation'
+    return phaseDescription ?? 'Enable automation (answer bot)'
   }
 
   const handleColorChange = (color: string | null) => {
@@ -88,7 +87,7 @@ export function BoardColumn({
         <span className={cn(
           'text-xs px-2 py-0.5 rounded-[10px]',
           isOver && 'bg-accent-red/20 text-accent-red',
-          isAtLimit && 'bg-accent-yellow/20 text-accent-yellow',
+          isAtLimit && 'bg-[#4ade80]/20 text-[#4ade80]',
           !isOver && !isAtLimit && 'bg-bg-tertiary text-white'
         )}>
           {tickets.length}/{wipLimit}
@@ -114,30 +113,31 @@ export function BoardColumn({
         <div
           className={cn(
             'swimlane-front bg-bg-secondary rounded-lg flex flex-col',
-            isAutomated && !isSkipped && 'opacity-60',
+            isAutomated && 'opacity-60',
             isSkipped && 'opacity-50'
           )}
           style={columnBackgroundStyle}
         >
-          {/* Currently Automated Banner (non-skippable phases) */}
-          {isAutomated && !isSkippable && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border-b border-accent/20 rounded-t-lg">
-              <Bot className="h-3 w-3 text-accent" />
-              <span className="text-xs text-accent font-medium">Currently Automated</span>
+          {/* Currently Automated Banner */}
+          {isAutomated && !isSkipped && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#60a5fa]/10 border-b border-[#60a5fa]/20 rounded-t-lg">
+              <Bot className="h-3 w-3 text-[#60a5fa]" />
+              <span className="text-xs text-[#60a5fa] font-medium">Currently Automated</span>
             </div>
           )}
 
           {/* Phase Skipped Banner */}
           {isSkipped && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-yellow/10 border-b border-accent-yellow/20 rounded-t-lg">
-              <SkipForward className="h-3 w-3 text-accent-yellow" />
-              <span className="text-xs text-accent-yellow font-medium">Phase Skipped</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4ade80]/10 border-b border-[#4ade80]/20 rounded-t-lg">
+              <SkipForward className="h-3 w-3 text-[#4ade80]" />
+              <span className="text-xs text-[#4ade80] font-medium">Phase Skipped</span>
             </div>
           )}
 
           {/* Column Header */}
           <div className="flex items-center justify-between p-3 border-b border-border">
             <div className="flex items-center gap-2">
+              {/* Automate toggle (Bot icon) */}
               {canAutomate && onToggleAutomated && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -149,12 +149,35 @@ export function BoardColumn({
                     >
                       <Bot className={cn(
                         'h-4 w-4',
-                        isAutomated ? 'text-accent' : 'text-text-muted'
+                        isAutomated ? 'text-[#60a5fa]' : 'text-text-muted'
                       )} />
                     </IconButton>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
                     <p className="text-xs">{getAutomateTooltipText()}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {/* Skip toggle (SkipForward icon) */}
+              {isSkippable && onToggleSkipped && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <IconButton
+                      tooltip=""
+                      onClick={onToggleSkipped}
+                      disabled={isMigrating}
+                      className={cn(isMigrating && 'cursor-not-allowed opacity-50')}
+                    >
+                      <SkipForward className={cn(
+                        'h-4 w-4',
+                        isSkipped ? 'text-[#4ade80]' : 'text-text-muted'
+                      )} />
+                    </IconButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">
+                      {isSkipped ? 'Phase skipped — tickets pass through' : 'Skip this phase'}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -177,38 +200,6 @@ export function BoardColumn({
                 <IconButton tooltip="Create new ticket" onClick={openAddTicketModal}>
                   <Plus className="h-4 w-4" />
                 </IconButton>
-              )}
-              {/* Skip toggle - far right, for both skippable and automatable phases */}
-              {((isSkippable && onToggleSkipped) || (canAutomate && onToggleAutomated)) && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={isSkippable ? onToggleSkipped : onToggleAutomated}
-                      disabled={isMigrating}
-                      className={cn(
-                        'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary',
-                        isAutomated ? 'bg-accent-yellow' : 'bg-bg-tertiary',
-                        isMigrating && 'cursor-not-allowed opacity-50'
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ring-0 transition-transform',
-                          isAutomated ? 'translate-x-4' : 'translate-x-0'
-                        )}
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">
-                      {isSkippable
-                        ? (isSkipped ? 'Phase skipped — tickets pass through' : 'Skip this phase')
-                        : (isAutomated ? 'Automated — tickets pass through' : 'Skip this phase')
-                      }
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
               )}
             </div>
           </div>

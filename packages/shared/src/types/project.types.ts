@@ -11,6 +11,7 @@ export interface Project {
   }
   automatedPhases?: string[]
   automatedPhaseMigration?: boolean
+  skippedPhases?: string[]
   swimlaneColors?: Record<string, string>
   wipLimits?: Record<string, number>
   branchPrefix?: string

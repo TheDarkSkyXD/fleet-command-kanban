@@ -215,6 +215,7 @@ export function registerProjectRoutes(
         template: p.template,
         automatedPhases: p.automatedPhases,
         automatedPhaseMigration: p.automatedPhaseMigration,
+        skippedPhases: p.skippedPhases,
         wipLimits: p.wipLimits,
         swimlaneColors: p.swimlaneColors,
         branchPrefix: p.branchPrefix,
@@ -383,6 +384,13 @@ export function registerProjectRoutes(
           ? [...new Set([...automatedPhases, phaseId])]
           : automatedPhases.filter((p) => p !== phaseId);
 
+        // If automating, remove from skippedPhases (mutually exclusive)
+        if (automated && project.skippedPhases?.includes(phaseId)) {
+          updateProject(project.id, {
+            skippedPhases: project.skippedPhases.filter((p) => p !== phaseId),
+          });
+        }
+
         // If automating and phase has tickets, need to migrate them
         if (automated) {
           updateProject(project.id, {
@@ -398,6 +406,73 @@ export function registerProjectRoutes(
           }
         } else {
           updateProject(project.id, { automatedPhases: updated });
+        }
+
+        const result = getProjectById(project.id);
+        await refreshProjects();
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    },
+  );
+
+  // PATCH /api/projects/:id/skipped-phases - Toggle phase skipped state
+  app.patch(
+    "/api/projects/:id/skipped-phases",
+    async (req: Request, res: Response) => {
+      try {
+        const id = decodeURIComponent(req.params.id);
+        const { phaseId, skipped } = req.body as {
+          phaseId: string;
+          skipped: boolean;
+        };
+
+        const project = resolveProject(id);
+        if (!project) {
+          res.status(404).json({ error: "Project not found" });
+          return;
+        }
+
+        // Validate phase exists in template
+        if (project.template) {
+          const template = await getTemplateWithFullPhasesForProject(project.id);
+          const phaseExists = template?.phases.some(
+            (p) => p.name === phaseId || p.id === phaseId,
+          );
+          if (!phaseExists) {
+            res.status(400).json({ error: "Invalid phase ID" });
+            return;
+          }
+        }
+
+        // Update skippedPhases array
+        const skippedPhases = project.skippedPhases ?? [];
+        const updatedSkipped = skipped
+          ? [...new Set([...skippedPhases, phaseId])]
+          : skippedPhases.filter((p) => p !== phaseId);
+
+        // If skipping, remove from automatedPhases (mutually exclusive)
+        const updates: Record<string, unknown> = { skippedPhases: updatedSkipped };
+        if (skipped && project.automatedPhases?.includes(phaseId)) {
+          updates.automatedPhases = project.automatedPhases.filter((p) => p !== phaseId);
+        }
+
+        updateProject(project.id, updates);
+
+        // If skipping and phase has tickets, migrate them forward
+        if (skipped) {
+          const tickets = await listTickets(project.id, { phase: phaseId as TicketPhase });
+          if (tickets.length > 0) {
+            for (const ticket of tickets) {
+              const targetPhase = await resolveTargetPhase(project.id, phaseId);
+              if (targetPhase !== phaseId) {
+                await updateTicket(project.id, ticket.id, {
+                  phase: targetPhase as TicketPhase,
+                });
+              }
+            }
+          }
         }
 
         const result = getProjectById(project.id);

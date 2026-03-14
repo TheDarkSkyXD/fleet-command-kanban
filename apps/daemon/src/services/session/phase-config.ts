@@ -95,9 +95,14 @@ export async function resolveTargetPhase(
     // Skip "Blocked" - it's a special state only entered explicitly
     if (phase.name === "Blocked") continue;
     const isAutomated = project.automatedPhases?.includes(phase.name) ?? false;
+    const isSkipped = project.skippedPhases?.includes(phase.name) ?? false;
     const isManualCheckpoint =
       phase.transitions?.manual === true &&
       (!phase.workers || phase.workers.length === 0);
+    // Skip phases that are explicitly skipped
+    if (isSkipped && (isManualCheckpoint || phase.skippable)) {
+      continue;
+    }
     // Skip phases that are automated AND are either:
     // - pure manual checkpoints (no workers), OR
     // - explicitly marked skippable in the template (e.g. Pull Requests)

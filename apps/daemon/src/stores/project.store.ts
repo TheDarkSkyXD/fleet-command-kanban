@@ -58,6 +58,9 @@ function rowToProject(row: Record<string, unknown>): Project {
       ? JSON.parse(row.automated_phases as string)
       : undefined,
     automatedPhaseMigration: row.automated_phase_migration === 1,
+    skippedPhases: row.skipped_phases
+      ? JSON.parse(row.skipped_phases as string)
+      : undefined,
     swimlaneColors: row.swimlane_colors
       ? JSON.parse(row.swimlane_colors as string)
       : undefined,
@@ -194,6 +197,12 @@ export class ProjectStore {
     if (updates.automatedPhaseMigration !== undefined) {
       fields.push("automated_phase_migration = ?");
       values.push(updates.automatedPhaseMigration ? 1 : 0);
+    }
+    if (updates.skippedPhases !== undefined) {
+      fields.push("skipped_phases = ?");
+      values.push(
+        updates.skippedPhases ? JSON.stringify(updates.skippedPhases) : null
+      );
     }
     if (updates.swimlaneColors !== undefined) {
       fields.push("swimlane_colors = ?");
