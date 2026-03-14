@@ -119,13 +119,11 @@ export function BrainstormChat({
   useSessionEnded(useCallback((data: { brainstormId?: string; exitCode?: number; status?: string }) => {
     if (data.brainstormId !== brainstormId) return
 
-    // Clear activity indicator — session is no longer running
+    // Always clear thinking state when session ends
     setCurrentActivity(null)
+    setIsWaitingForResponse(false)
 
-    // Only show error for actual failures, not normal exits
-    // Normal exit (code 0) happens when session asks a question and exits
     if (data.status === 'failed') {
-      setIsWaitingForResponse(false)
       setMessages(prev => [...prev, {
         type: 'error',
         text: 'Session encountered an error. Please try again.'
