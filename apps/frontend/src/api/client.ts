@@ -4,6 +4,7 @@ import type {
   Folder,
   Ticket,
   Session,
+  Assistant,
   Brainstorm,
   Template,
   Artifact,
@@ -292,6 +293,61 @@ export const api = {
   deleteBrainstorm: (projectId: string, brainstormId: string) =>
     request<void>(
       `/api/brainstorms/${encodeURIComponent(projectId)}/${brainstormId}`,
+      { method: 'DELETE' }
+    ),
+
+  // ============ Project Assistant ============
+
+  getAssistant: (projectId: string) =>
+    request<Assistant>(`/api/assistant/${encodeURIComponent(projectId)}`),
+
+  startAssistantSession: (projectId: string) =>
+    request<{ ok: boolean; sessionId?: string; assistantId: string; alreadyActive?: boolean; pendingQuestion?: boolean }>(
+      `/api/assistant/${encodeURIComponent(projectId)}/start-session`,
+      { method: 'POST' }
+    ),
+
+  sendAssistantMessage: (projectId: string, message: string, conversationId?: string) =>
+    request<{ ok: boolean; sessionId: string; assistantId: string }>(
+      `/api/assistant/${encodeURIComponent(projectId)}/message`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ message, conversationId })
+      }
+    ),
+
+  getAssistantMessages: (projectId: string, conversationId?: string) =>
+    request<BrainstormMessagesResponse>(
+      `/api/assistant/${encodeURIComponent(projectId)}/messages${conversationId ? `?conversationId=${encodeURIComponent(conversationId)}` : ''}`
+    ),
+
+  getAssistantPending: (projectId: string) =>
+    request<BrainstormPendingResponse>(
+      `/api/assistant/${encodeURIComponent(projectId)}/pending`
+    ),
+
+  getAssistantThreads: (projectId: string) =>
+    request<{
+      threads: Array<{
+        id: string
+        title: string
+        messageCount: number
+        isActive: boolean
+        createdAt: string
+        updatedAt: string
+      }>
+      activeConversationId: string | null
+    }>(`/api/assistant/${encodeURIComponent(projectId)}/threads`),
+
+  createAssistantThread: (projectId: string) =>
+    request<{ conversationId: string; assistantId: string; sessionId?: string }>(
+      `/api/assistant/${encodeURIComponent(projectId)}/new-thread`,
+      { method: 'POST' }
+    ),
+
+  deleteAssistantThread: (projectId: string, conversationId: string) =>
+    request<{ ok: boolean; newActiveConversationId: string | null }>(
+      `/api/assistant/${encodeURIComponent(projectId)}/threads/${encodeURIComponent(conversationId)}`,
       { method: 'DELETE' }
     ),
 

@@ -16,3 +16,4 @@ export { registerFolderRoutes } from "./folders.routes.js";
 export { registerFilesystemRoutes } from "./filesystem.routes.js";
 export { registerTerminalRoutes } from "./terminal.routes.js";
 export { registerDevServerRoutes } from "./devserver.routes.js";
+export { registerAssistantRoutes } from "./assistant.routes.js";

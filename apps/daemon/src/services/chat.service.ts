@@ -523,6 +523,13 @@ export class ChatService {
     }
 
     if (context.brainstormId) {
+      // Check assistants table first (assistant IDs start with 'asst_')
+      if (context.brainstormId.startsWith('asst_')) {
+        const row = db
+          .prepare("SELECT conversation_id FROM assistants WHERE id = ?")
+          .get(context.brainstormId) as { conversation_id: string | null } | undefined;
+        return row?.conversation_id || null;
+      }
       const row = db
         .prepare("SELECT conversation_id FROM brainstorms WHERE id = ?")
         .get(context.brainstormId) as { conversation_id: string | null } | undefined;

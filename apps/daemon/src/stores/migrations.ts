@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 
-const CURRENT_SCHEMA_VERSION = 13;
+const CURRENT_SCHEMA_VERSION = 16;
 
 /**
  * Run database migrations.
@@ -59,6 +59,18 @@ export function runMigrations(db: Database.Database): void {
 
   if (version < 13) {
     migrateV13(db);
+  }
+
+  if (version < 14) {
+    migrateV14(db);
+  }
+
+  if (version < 15) {
+    migrateV15(db);
+  }
+
+  if (version < 16) {
+    migrateV16(db);
   }
 
   db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
@@ -497,6 +509,46 @@ function migrateV13(db: Database.Database): void {
 }
 
 /**
+ * V15: Add title and assistant_brainstorm_id to conversations for multi-thread assistant support
+ */
+function migrateV15(db: Database.Database): void {
+  const columns = db.pragma("table_info(conversations)") as { name: string }[];
+  const colNames = new Set(columns.map((c) => c.name));
+
+  if (!colNames.has("title")) {
+    db.exec(`ALTER TABLE conversations ADD COLUMN title TEXT`);
+  }
+
+  if (!colNames.has("assistant_brainstorm_id")) {
+    db.exec(`ALTER TABLE conversations ADD COLUMN assistant_brainstorm_id TEXT REFERENCES brainstorms(id) ON DELETE CASCADE`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_conversations_assistant ON conversations(assistant_brainstorm_id) WHERE assistant_brainstorm_id IS NOT NULL`);
+
+    // Backfill: link existing assistant conversations
+    db.exec(`
+      UPDATE conversations SET assistant_brainstorm_id = (
+        SELECT b.id FROM brainstorms b WHERE b.conversation_id = conversations.id AND b.is_assistant = 1
+      )
+      WHERE EXISTS (
+        SELECT 1 FROM brainstorms b WHERE b.conversation_id = conversations.id AND b.is_assistant = 1
+      )
+    `);
+  }
+}
+
+/**
+ * V14: Add is_assistant flag to brainstorms table
+ */
+function migrateV14(db: Database.Database): void {
+  const columns = db.pragma("table_info(brainstorms)") as { name: string }[];
+  const colNames = new Set(columns.map((c) => c.name));
+
+  if (!colNames.has("is_assistant")) {
+    db.exec(`ALTER TABLE brainstorms ADD COLUMN is_assistant INTEGER NOT NULL DEFAULT 0`);
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_brainstorms_assistant ON brainstorms(project_id) WHERE is_assistant = 1`);
+  }
+}
+
+/**
  * V7: Add folders table and folder_id FK on projects
  */
 function migrateV7(db: Database.Database): void {
@@ -514,4 +566,58 @@ function migrateV7(db: Database.Database): void {
   if (!hasFolderId) {
     db.exec(`ALTER TABLE projects ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL`);
   }
+}
+
+/**
+ * V16: Separate assistants from brainstorms into their own table
+ */
+function migrateV16(db: Database.Database): void {
+  // Create dedicated assistants table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS assistants (
+      id              TEXT PRIMARY KEY,
+      project_id      TEXT NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
+      conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL,
+      created_at      TEXT NOT NULL,
+      updated_at      TEXT NOT NULL
+    );
+  `);
+
+  // Migrate existing assistant rows from brainstorms table
+  db.exec(`
+    INSERT OR IGNORE INTO assistants (id, project_id, conversation_id, created_at, updated_at)
+    SELECT id, project_id, conversation_id, created_at, updated_at
+    FROM brainstorms
+    WHERE is_assistant = 1
+  `);
+
+  // Add assistant_id column to conversations (alongside assistant_brainstorm_id for now)
+  const convColumns = db.pragma("table_info(conversations)") as { name: string }[];
+  const convColNames = new Set(convColumns.map((c) => c.name));
+
+  if (!convColNames.has("assistant_id")) {
+    db.exec(`ALTER TABLE conversations ADD COLUMN assistant_id TEXT REFERENCES assistants(id) ON DELETE CASCADE`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_conversations_assistant_id ON conversations(assistant_id) WHERE assistant_id IS NOT NULL`);
+
+    // Copy data from assistant_brainstorm_id to assistant_id
+    db.exec(`UPDATE conversations SET assistant_id = assistant_brainstorm_id WHERE assistant_brainstorm_id IS NOT NULL`);
+  }
+
+  // Add assistant_id column to sessions
+  const sessColumns = db.pragma("table_info(sessions)") as { name: string }[];
+  const sessColNames = new Set(sessColumns.map((c) => c.name));
+
+  if (!sessColNames.has("assistant_id")) {
+    db.exec(`ALTER TABLE sessions ADD COLUMN assistant_id TEXT REFERENCES assistants(id) ON DELETE CASCADE`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_assistant ON sessions(assistant_id) WHERE assistant_id IS NOT NULL`);
+
+    // Migrate: sessions that reference assistant brainstorms get assistant_id set
+    db.exec(`
+      UPDATE sessions SET assistant_id = brainstorm_id, brainstorm_id = NULL
+      WHERE brainstorm_id IN (SELECT id FROM brainstorms WHERE is_assistant = 1)
+    `);
+  }
+
+  // Delete migrated assistant rows from brainstorms
+  db.exec(`DELETE FROM brainstorms WHERE is_assistant = 1`);
 }

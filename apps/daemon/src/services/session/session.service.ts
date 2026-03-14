@@ -21,13 +21,16 @@ import {
 } from "../../stores/ticket.store.js";
 import { getProjectById } from "../../stores/project.store.js";
 import { getBrainstorm } from "../../stores/brainstorm.store.js";
+import { getAssistantById } from "../../stores/assistant.store.js";
 import {
   createStoredSession,
   endStoredSession,
   getLatestClaudeSessionId,
   getLatestClaudeSessionIdForTicket,
+  getLatestClaudeSessionIdForAssistant,
   updateClaudeSessionId,
   getActiveSessionForBrainstorm,
+  getActiveSessionForAssistant,
   getActiveSessionForTicket,
 } from "../../stores/session.store.js";
 import {
@@ -50,7 +53,7 @@ import type { TaskContext } from "../../types/orchestration.types.js";
 import type { ActiveSession } from "./types.js";
 import { ensureWorktree } from "./worktree.js";
 import { getPhaseConfig, phaseRequiresWorktree, getNextEnabledPhase } from "./phase-config.js";
-import { buildBrainstormPrompt, buildAgentPrompt } from "./prompts.js";
+import { buildBrainstormPrompt, buildAssistantPrompt, buildAgentPrompt } from "./prompts.js";
 import { tryLoadAgentDefinition } from "./agent-loader.js";
 import { resolveModel } from "./model-resolver.js";
 import { isPhaseAtWipLimit } from "./wip.js";
@@ -591,24 +594,25 @@ export class SessionService {
     projectPath: string,
     initialMessage?: string,
   ): Promise<string> {
-    console.log(`[spawnForBrainstorm] Starting for brainstorm ${brainstormId}`);
+    const brainstorm = await getBrainstorm(projectId, brainstormId);
+    const logPrefix = '[brainstorm]';
 
     // Safety check - with exit-on-question, there shouldn't be an active session
-    // Log a warning if one exists (indicates unexpected state)
     const existingActive = getActiveSessionForBrainstorm(brainstormId);
     if (existingActive && this.sessions.has(existingActive.id)) {
-      console.warn(`[spawnForBrainstorm] Unexpected: active session ${existingActive.id} exists for ${brainstormId}`);
+      console.warn(`${logPrefix} Unexpected: active session ${existingActive.id} exists for ${brainstormId}`);
     }
 
-    const brainstorm = await getBrainstorm(projectId, brainstormId);
+    console.log(`${logPrefix} Starting session for ${brainstormId}`);
     const existingClaudeSessionId = getLatestClaudeSessionId(brainstormId);
 
     // Create session record in database
+    const agentSource = "brainstorm";
     const storedSession = createStoredSession({
       projectId,
       brainstormId,
       claudeSessionId: existingClaudeSessionId || undefined,
-      agentSource: "brainstorm",
+      agentSource,
     });
     const sessionId = storedSession.id;
 
@@ -631,14 +635,13 @@ export class SessionService {
     }
 
     // Only build full prompt for first session; resumed sessions use --resume
-    const prompt = existingClaudeSessionId
-      ? pendingContext?.response || "Continue the brainstorm."
-      : buildBrainstormPrompt(
-          projectId,
-          brainstormId,
-          brainstorm,
-          { pendingContext, initialMessage },
-        );
+    let prompt: string;
+    if (existingClaudeSessionId) {
+      // Use pending context response, or the initial message (user's new message), or fallback
+      prompt = pendingContext?.response || initialMessage || "Continue the brainstorm.";
+    } else {
+      prompt = buildBrainstormPrompt(projectId, brainstormId, brainstorm, { pendingContext, initialMessage });
+    }
 
     const meta: SessionMeta = {
       projectId,
@@ -698,9 +701,8 @@ export class SessionService {
       },
     };
 
-    // Load brainstorm agent from template
-    const agentType = "agents/brainstorm.md";
-    const agentDefinition = await tryLoadAgentDefinition(projectId, agentType);
+    // Load agent from template
+    const agentDefinition = await tryLoadAgentDefinition(projectId, "agents/brainstorm.md");
 
     if (!agentDefinition) {
       throw new Error(
@@ -710,9 +712,12 @@ export class SessionService {
 
     // Include agent instructions in prompt for new sessions
     // (resumed sessions already have agent context)
+    // For assistants, the prompt is self-contained so agent definition is optional
     const fullPrompt = existingClaudeSessionId
       ? prompt
-      : `${agentDefinition.prompt}\n\n---\n\n${prompt}`;
+      : agentDefinition
+        ? `${agentDefinition.prompt}\n\n---\n\n${prompt}`
+        : prompt;
 
     const args = [
       "--dangerously-skip-permissions",
@@ -826,6 +831,247 @@ export class SessionService {
       logStream.end();
 
       // End session record in database
+      endStoredSession(sessionId, exitCode);
+
+      const session = this.sessions.get(sessionId);
+      if (session?.exitResolver) {
+        session.exitResolver();
+      }
+
+      this.sessions.delete(sessionId);
+      this.eventEmitter.emit("session:ended", { sessionId, ...endMeta });
+    });
+
+    return sessionId;
+  }
+
+  /**
+   * Spawn a session for the project assistant.
+   */
+  async spawnForAssistant(
+    projectId: string,
+    assistantId: string,
+    projectPath: string,
+    initialMessage?: string,
+  ): Promise<string> {
+    const assistant = getAssistantById(assistantId);
+    if (!assistant) {
+      throw new Error(`Assistant ${assistantId} not found`);
+    }
+
+    // Safety check - with exit-on-question, there shouldn't be an active session
+    const existingActive = getActiveSessionForAssistant(assistantId);
+    if (existingActive && this.sessions.has(existingActive.id)) {
+      console.warn(`[assistant] Unexpected: active session ${existingActive.id} exists for ${assistantId}`);
+    }
+
+    console.log(`[assistant] Starting session for ${assistantId}`);
+    const existingClaudeSessionId = getLatestClaudeSessionIdForAssistant(assistantId);
+
+    // Create session record in database
+    const storedSession = createStoredSession({
+      projectId,
+      assistantId,
+      claudeSessionId: existingClaudeSessionId || undefined,
+      agentSource: "assistant",
+    });
+    const sessionId = storedSession.id;
+
+    // Check for pending response from previous session
+    let pendingContext: { question: string; response: string } | undefined;
+    const pendingResponse = readResponse(projectId, assistantId);
+    const pendingQuestion = readQuestion(projectId, assistantId);
+
+    if (pendingResponse && pendingQuestion) {
+      console.log(`[assistant] Found pending context - resuming conversation`);
+      pendingContext = {
+        question: pendingQuestion.question,
+        response: pendingResponse.answer,
+      };
+      clearResponse(projectId, assistantId);
+      clearQuestion(projectId, assistantId);
+    }
+
+    // Build prompt
+    let prompt: string;
+    if (existingClaudeSessionId) {
+      prompt = pendingContext?.response || initialMessage || "Continue assisting the user.";
+    } else {
+      prompt = buildAssistantPrompt(projectId, assistantId, { name: "Project Assistant" }, { pendingContext, initialMessage });
+    }
+
+    const meta: SessionMeta = {
+      projectId,
+      brainstormId: assistantId,
+      brainstormName: "Project Assistant",
+      worktreePath: projectPath,
+      startedAt: new Date().toISOString(),
+      status: "running",
+    };
+
+    const logPath = this.getSessionLogPath(sessionId);
+    const logStream = createWriteStream(logPath, { flags: "a" });
+
+    logStream.write(
+      JSON.stringify({
+        type: "session_start",
+        meta,
+        timestamp: new Date().toISOString(),
+      }) + "\n",
+    );
+
+    const mcpProxyPath = path.join(__dirname, "..", "..", "mcp", "proxy.js");
+
+    // Get full path to node
+    let nodePath: string;
+    try {
+      const whichCmd = process.platform === "win32" ? "where node" : "which node";
+      const result = execSync(whichCmd, { encoding: "utf-8", stdio: "pipe" }).trim();
+      nodePath = result.split(/\r?\n/)[0];
+    } catch {
+      const home = process.env.HOME || process.env.USERPROFILE || "";
+      const fallbacks = process.platform === "win32"
+        ? [
+            path.join(home, "AppData", "Roaming", "nvm", "node.exe"),
+            "node",
+          ]
+        : [
+            path.join(home, ".nvm", "versions", "node", "v22.14.0", "bin", "node"),
+            path.join(home, ".local", "bin", "node"),
+            "/usr/local/bin/node",
+          ];
+      nodePath = fallbacks.find((p) => existsSync(p)) || "node";
+    }
+
+    const mcpConfig = {
+      mcpServers: {
+        "fleet-command": {
+          command: nodePath,
+          args: [mcpProxyPath],
+          env: {
+            FLEET_PROJECT_ID: projectId,
+            FLEET_TICKET_ID: "",
+            FLEET_BRAINSTORM_ID: assistantId,
+          },
+        },
+      },
+    };
+
+    // Load assistant agent from template
+    const agentDefinition = await tryLoadAgentDefinition(projectId, "agents/assistant.md");
+
+    const fullPrompt = existingClaudeSessionId
+      ? prompt
+      : agentDefinition
+        ? `${agentDefinition.prompt}\n\n---\n\n${prompt}`
+        : prompt;
+
+    const args = [
+      "--dangerously-skip-permissions",
+      "--output-format",
+      "stream-json",
+      "--verbose",
+      "--model",
+      "sonnet",
+      "--mcp-config",
+      JSON.stringify(mcpConfig),
+    ];
+
+    const disallowed = ["Skill(superpowers:*)", "AskUserQuestion"];
+    if (disallowed.length > 0) {
+      args.push("--disallowedTools", disallowed.join(","));
+    }
+
+    if (existingClaudeSessionId) {
+      console.log(`[assistant] Resuming Claude session ${existingClaudeSessionId}`);
+      args.push("--resume", existingClaudeSessionId);
+    }
+    args.push("--print", fullPrompt);
+
+    const claudePath = findClaudeBinary();
+    if (!claudePath) {
+      throw new Error("Claude CLI binary not found");
+    }
+
+    const proc = pty.spawn(claudePath, args, {
+      name: "xterm-256color",
+      cols: 120,
+      rows: 40,
+      cwd: projectPath,
+      env: {
+        ...getClaudeSpawnEnv(),
+        FLEET_PROJECT_ID: projectId,
+        FLEET_BRAINSTORM_ID: assistantId,
+      },
+    });
+
+    let exitResolver!: () => void;
+    const exitPromise = new Promise<void>((resolve) => {
+      exitResolver = resolve;
+    });
+
+    this.sessions.set(sessionId, {
+      process: proc,
+      meta,
+      logStream,
+      exitPromise,
+      exitResolver,
+    });
+
+    this.eventEmitter.emit("session:started", { sessionId, ...meta });
+
+    let claudeSessionIdCaptured = !!existingClaudeSessionId;
+
+    proc.onData((data: string) => {
+      const lines = data.split("\n").filter(Boolean);
+      for (const line of lines) {
+        try {
+          const event = JSON.parse(line);
+          const logEntry = { ...event, timestamp: new Date().toISOString() };
+          logStream.write(JSON.stringify(logEntry) + "\n");
+          this.eventEmitter.emit("session:output", {
+            sessionId,
+            ...meta,
+            event: logEntry,
+          });
+
+          if (
+            !claudeSessionIdCaptured &&
+            event.type === "system" &&
+            event.session_id
+          ) {
+            claudeSessionIdCaptured = true;
+            console.log(`[assistant] Captured Claude session ID: ${event.session_id}`);
+            updateClaudeSessionId(sessionId, event.session_id);
+          }
+        } catch {
+          const logEntry = {
+            type: "raw",
+            content: line,
+            timestamp: new Date().toISOString(),
+          };
+          logStream.write(JSON.stringify(logEntry) + "\n");
+        }
+      }
+    });
+
+    proc.onExit(({ exitCode }) => {
+      const endMeta: SessionMeta = {
+        ...meta,
+        status: exitCode === 0 ? "completed" : "failed",
+        exitCode,
+        endedAt: new Date().toISOString(),
+      };
+
+      logStream.write(
+        JSON.stringify({
+          type: "session_end",
+          meta: endMeta,
+          timestamp: new Date().toISOString(),
+        }) + "\n",
+      );
+      logStream.end();
+
       endStoredSession(sessionId, exitCode);
 
       const session = this.sessions.get(sessionId);

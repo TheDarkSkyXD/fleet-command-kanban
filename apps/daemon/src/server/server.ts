@@ -28,6 +28,7 @@ import {
   registerTaskRoutes,
   registerRalphRoutes,
   registerArtifactChatRoutes,
+  registerAssistantRoutes,
   registerFolderRoutes,
   registerFilesystemRoutes,
   registerTerminalRoutes,
@@ -527,25 +528,34 @@ export async function main(): Promise<void> {
         }
       }
 
-      // Handle brainstorm session end
+      // Handle brainstorm session end (assistants use brainstormId in meta for SSE compatibility)
       if (projectId && brainstormId) {
-        console.log(
-          `[session:ended] Session ${sessionId} ended for brainstorm ${brainstormId} with exit code ${exitCode}`,
-        );
-        try {
-          const stillActive = getActiveSessionForBrainstorm(brainstormId);
-          const pendingQuestion = await readQuestion(projectId, brainstormId);
+        // Check if this is an assistant session by ID prefix
+        const isAssistant = brainstormId.startsWith('asst_');
+        if (isAssistant) {
+          console.log(
+            `[session:ended] Session ${sessionId} ended for assistant ${brainstormId} with exit code ${exitCode}`,
+          );
+          // Assistants stay active permanently — no status update needed
+        } else {
+          console.log(
+            `[session:ended] Session ${sessionId} ended for brainstorm ${brainstormId} with exit code ${exitCode}`,
+          );
+          try {
+            const stillActive = getActiveSessionForBrainstorm(brainstormId);
+            const pendingQuestion = await readQuestion(projectId, brainstormId);
 
-          if (!stillActive && !pendingQuestion) {
-            const brainstorm = await updateBrainstorm(projectId, brainstormId, {
-              status: 'completed',
-            });
-            if (brainstorm) {
-              eventBus.emit('brainstorm:updated', { projectId, brainstorm });
+            if (!stillActive && !pendingQuestion) {
+              const brainstorm = await updateBrainstorm(projectId, brainstormId, {
+                status: 'completed',
+              });
+              if (brainstorm) {
+                eventBus.emit('brainstorm:updated', { projectId, brainstorm });
+              }
             }
+          } catch {
+            // Ignore - brainstorm may have been deleted
           }
-        } catch {
-          // Ignore - brainstorm may have been deleted
         }
       }
     },
@@ -673,6 +683,7 @@ export async function main(): Promise<void> {
   registerTaskRoutes(app);
   registerRalphRoutes(app);
   registerArtifactChatRoutes(app, sessionService, getProjects);
+  registerAssistantRoutes(app, sessionService, getProjects);
   registerFolderRoutes(app);
   registerFilesystemRoutes(app);
   registerTerminalRoutes(app);

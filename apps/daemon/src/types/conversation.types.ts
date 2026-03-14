@@ -1,6 +1,8 @@
 export interface Conversation {
   id: string;
   projectId: string;
+  title?: string | null;
+  assistantId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

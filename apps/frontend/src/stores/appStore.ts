@@ -72,6 +72,12 @@ interface AppState {
   openNewBrainstormSheet: (projectId: string) => void
   closeBrainstormSheet: () => void
 
+  // Assistant panel state
+  assistantPanelOpen: boolean
+  assistantPanelProjectId: string | null
+  openAssistantPanel: (projectId: string) => void
+  closeAssistantPanel: () => void
+
   addProjectModalOpen: boolean
   openAddProjectModal: () => void
   closeAddProjectModal: () => void
@@ -208,12 +214,14 @@ export const useAppStore = create<AppState>()(
         ticketSheetOpen: true,
         ticketSheetProjectId: projectId,
         ticketSheetTicketId: ticketId,
-        // Mutual exclusion: close brainstorm sidebar
+        // Mutual exclusion: close brainstorm and assistant panels
         brainstormSheetOpen: false,
         brainstormSheetBrainstormId: null,
         brainstormSheetProjectId: null,
         brainstormSheetBrainstormName: null,
-        brainstormSheetIsCreating: false
+        brainstormSheetIsCreating: false,
+        assistantPanelOpen: false,
+        assistantPanelProjectId: null,
       }),
       closeTicketSheet: () => set({
         ticketSheetOpen: false,
@@ -233,10 +241,12 @@ export const useAppStore = create<AppState>()(
         brainstormSheetBrainstormId: brainstormId,
         brainstormSheetBrainstormName: brainstormName,
         brainstormSheetIsCreating: false,
-        // Mutual exclusion: close ticket sidebar
+        // Mutual exclusion: close ticket sidebar and assistant panel
         ticketSheetOpen: false,
         ticketSheetTicketId: null,
-        ticketSheetProjectId: null
+        ticketSheetProjectId: null,
+        assistantPanelOpen: false,
+        assistantPanelProjectId: null,
       }),
       openNewBrainstormSheet: (projectId) => set({
         brainstormSheetOpen: true,
@@ -244,10 +254,12 @@ export const useAppStore = create<AppState>()(
         brainstormSheetBrainstormId: null,
         brainstormSheetBrainstormName: null,
         brainstormSheetIsCreating: true,
-        // Mutual exclusion: close ticket sidebar
+        // Mutual exclusion: close ticket sidebar and assistant panel
         ticketSheetOpen: false,
         ticketSheetTicketId: null,
-        ticketSheetProjectId: null
+        ticketSheetProjectId: null,
+        assistantPanelOpen: false,
+        assistantPanelProjectId: null,
       }),
       closeBrainstormSheet: () => set({
         brainstormSheetOpen: false,
@@ -255,6 +267,27 @@ export const useAppStore = create<AppState>()(
         brainstormSheetProjectId: null,
         brainstormSheetBrainstormName: null,
         brainstormSheetIsCreating: false
+      }),
+
+      // Assistant panel — closes ticket and brainstorm sidebars (mutual exclusion)
+      assistantPanelOpen: false,
+      assistantPanelProjectId: null,
+      openAssistantPanel: (projectId) => set({
+        assistantPanelOpen: true,
+        assistantPanelProjectId: projectId,
+        // Mutual exclusion: close ticket and brainstorm sidebars
+        ticketSheetOpen: false,
+        ticketSheetTicketId: null,
+        ticketSheetProjectId: null,
+        brainstormSheetOpen: false,
+        brainstormSheetBrainstormId: null,
+        brainstormSheetProjectId: null,
+        brainstormSheetBrainstormName: null,
+        brainstormSheetIsCreating: false,
+      }),
+      closeAssistantPanel: () => set({
+        assistantPanelOpen: false,
+        assistantPanelProjectId: null,
       }),
 
       // Add project modal

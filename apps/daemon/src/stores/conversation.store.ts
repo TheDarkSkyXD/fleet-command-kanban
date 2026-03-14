@@ -14,6 +14,8 @@ import type {
 interface ConversationRow {
   id: string;
   project_id: string;
+  title: string | null;
+  assistant_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +39,8 @@ function rowToConversation(row: ConversationRow): Conversation {
   return {
     id: row.id,
     projectId: row.project_id,
+    title: row.title,
+    assistantId: row.assistant_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -66,16 +70,19 @@ export class ConversationStore {
   // Conversation CRUD
   // ---------------------------------------------------------------------------
 
-  createConversation(projectId: string): Conversation {
+  createConversation(
+    projectId: string,
+    options?: { title?: string; assistantId?: string }
+  ): Conversation {
     const id = randomUUID();
     const now = new Date().toISOString();
 
     this.db
       .prepare(
-        `INSERT INTO conversations (id, project_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?)`
+        `INSERT INTO conversations (id, project_id, title, assistant_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .run(id, projectId, now, now);
+      .run(id, projectId, options?.title || null, options?.assistantId || null, now, now);
 
     return this.getConversation(id)!;
   }
@@ -86,6 +93,32 @@ export class ConversationStore {
       .get(conversationId) as ConversationRow | undefined;
 
     return row ? rowToConversation(row) : null;
+  }
+
+  getConversationsByAssistant(assistantId: string): Conversation[] {
+    const rows = this.db
+      .prepare(
+        "SELECT * FROM conversations WHERE assistant_id = ? ORDER BY updated_at DESC"
+      )
+      .all(assistantId) as ConversationRow[];
+
+    return rows.map(rowToConversation);
+  }
+
+  updateConversationTitle(conversationId: string, title: string): boolean {
+    const result = this.db
+      .prepare("UPDATE conversations SET title = ? WHERE id = ?")
+      .run(title, conversationId);
+    return result.changes > 0;
+  }
+
+  getMessageCount(conversationId: string): number {
+    const row = this.db
+      .prepare(
+        "SELECT COUNT(*) as count FROM conversation_messages WHERE conversation_id = ?"
+      )
+      .get(conversationId) as { count: number };
+    return row.count;
   }
 
   deleteConversation(conversationId: string): boolean {
@@ -187,6 +220,10 @@ export function getConversation(conversationId: string): Conversation | null {
   return new ConversationStore(getDatabase()).getConversation(conversationId);
 }
 
+export function deleteConversation(conversationId: string): boolean {
+  return new ConversationStore(getDatabase()).deleteConversation(conversationId);
+}
+
 export function addMessage(
   conversationId: string,
   input: CreateMessageInput
@@ -208,4 +245,26 @@ export function getPendingQuestion(
 
 export function answerQuestion(messageId: string): boolean {
   return new ConversationStore(getDatabase()).answerQuestion(messageId);
+}
+
+export function getConversationsByAssistant(
+  assistantId: string
+): Conversation[] {
+  return new ConversationStore(getDatabase()).getConversationsByAssistant(
+    assistantId
+  );
+}
+
+export function updateConversationTitle(
+  conversationId: string,
+  title: string
+): boolean {
+  return new ConversationStore(getDatabase()).updateConversationTitle(
+    conversationId,
+    title
+  );
+}
+
+export function getMessageCount(conversationId: string): number {
+  return new ConversationStore(getDatabase()).getMessageCount(conversationId);
 }

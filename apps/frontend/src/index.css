@@ -933,7 +933,8 @@ button, a, [role="button"] {
 @media (max-width: 640px) {
   /* Hide board content when ticket detail is open */
   .board-container[data-detail-open="true"] > main,
-  .board-container[data-brainstorm-open="true"] > main {
+  .board-container[data-brainstorm-open="true"] > main,
+  .board-container[data-assistant-open="true"] > main {
     visibility: hidden;
   }
 
@@ -1004,6 +1005,85 @@ button, a, [role="button"] {
     visibility: visible;
     transition: transform 300ms ease-out, visibility 0s 0s;
   }
+}
+
+/* Assistant panel */
+.assistant-panel {
+  height: 100%;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-sidebar);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 200ms ease-in-out;
+}
+
+.assistant-panel[data-open="true"] {
+  width: 500px;
+  max-width: 40vw;
+}
+
+.assistant-panel[data-open="false"] {
+  width: 0;
+}
+
+@media (max-width: 640px) {
+  .assistant-panel {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    height: auto;
+    width: auto !important;
+    max-width: none !important;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    z-index: 30;
+    transform: translateX(calc(100% + 24px));
+    visibility: hidden;
+    transition: transform 300ms ease-out, visibility 0s 300ms;
+  }
+
+  .assistant-panel[data-open="true"] {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 300ms ease-out, visibility 0s 0s;
+  }
+}
+
+/* Assistant FAB */
+.assistant-fab {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 10;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.assistant-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.assistant-fab:active {
+  transform: translateY(0);
+}
+
+.assistant-fab--open {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 /* ================================================

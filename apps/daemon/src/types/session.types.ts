@@ -60,6 +60,7 @@ export interface CreateSessionInput {
   projectId: string;
   ticketId?: string;
   brainstormId?: string;
+  assistantId?: string;
   claudeSessionId?: string;
   agentSource?: string;
   phase?: string;
@@ -71,6 +72,7 @@ export interface StoredSession {
   projectId: string;
   ticketId?: string;
   brainstormId?: string;
+  assistantId?: string;
   conversationId?: string;
   claudeSessionId?: string;
   agentSource?: string;

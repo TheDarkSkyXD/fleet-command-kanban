@@ -15,6 +15,7 @@ interface SessionRow {
   project_id: string;
   ticket_id: string | null;
   brainstorm_id: string | null;
+  assistant_id: string | null;
   conversation_id: string | null;
   claude_session_id: string | null;
   agent_source: string | null;
@@ -35,6 +36,7 @@ function rowToSession(row: SessionRow): StoredSession {
     projectId: row.project_id,
     ticketId: row.ticket_id || undefined,
     brainstormId: row.brainstorm_id || undefined,
+    assistantId: row.assistant_id || undefined,
     conversationId: row.conversation_id || undefined,
     claudeSessionId: row.claude_session_id || undefined,
     agentSource: row.agent_source || undefined,
@@ -63,14 +65,15 @@ export class SessionStore {
 
     this.db
       .prepare(
-        `INSERT INTO sessions (id, project_id, ticket_id, brainstorm_id, claude_session_id, agent_source, started_at, phase, metadata)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO sessions (id, project_id, ticket_id, brainstorm_id, assistant_id, claude_session_id, agent_source, started_at, phase, metadata)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         id,
         input.projectId,
         input.ticketId || null,
         input.brainstormId || null,
+        input.assistantId || null,
         input.claudeSessionId || null,
         input.agentSource || null,
         now,
@@ -168,6 +171,30 @@ export class SessionStore {
          ORDER BY started_at DESC, ROWID DESC LIMIT 1`
       )
       .get(brainstormId) as { claude_session_id: string } | undefined;
+
+    return row?.claude_session_id || null;
+  }
+
+  getActiveSessionForAssistant(assistantId: string): StoredSession | null {
+    const row = this.db
+      .prepare(
+        `SELECT * FROM sessions
+         WHERE assistant_id = ? AND ended_at IS NULL
+         ORDER BY started_at DESC LIMIT 1`
+      )
+      .get(assistantId) as SessionRow | undefined;
+
+    return row ? rowToSession(row) : null;
+  }
+
+  getLatestClaudeSessionIdForAssistant(assistantId: string): string | null {
+    const row = this.db
+      .prepare(
+        `SELECT claude_session_id FROM sessions
+         WHERE assistant_id = ? AND claude_session_id IS NOT NULL
+         ORDER BY started_at DESC, ROWID DESC LIMIT 1`
+      )
+      .get(assistantId) as { claude_session_id: string } | undefined;
 
     return row?.claude_session_id || null;
   }
@@ -272,6 +299,22 @@ export function updateClaudeSessionId(
   return new SessionStore(getDatabase()).updateClaudeSessionId(
     sessionId,
     claudeSessionId
+  );
+}
+
+export function getActiveSessionForAssistant(
+  assistantId: string
+): StoredSession | null {
+  return new SessionStore(getDatabase()).getActiveSessionForAssistant(
+    assistantId
+  );
+}
+
+export function getLatestClaudeSessionIdForAssistant(
+  assistantId: string
+): string | null {
+  return new SessionStore(getDatabase()).getLatestClaudeSessionIdForAssistant(
+    assistantId
   );
 }
 

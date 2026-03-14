@@ -11,6 +11,9 @@ const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
 // Set app name for dock/taskbar (must be before app is ready)
 app.setName('Fleet Command Kanban')
 
+// Enable remote debugging for debug-electron-mcp
+app.commandLine.appendSwitch('remote-debugging-port', '9229')
+
 // Handle GPU process crashes gracefully to prevent black screens
 app.on('gpu-info-update', () => { /* keep app alive */ })
 app.on('child-process-gone', (_event, details) => {
