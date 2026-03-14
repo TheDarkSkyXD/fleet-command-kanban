@@ -168,24 +168,18 @@ export function BrainstormChat({
         setMessages(historyMessages)
 
         // Determine if we should show the thinking indicator:
-        // Only if the last message is from the user (meaning we're waiting for AI response)
-        // AND there's actually an active session running
-        if (historyMessages.length > 0) {
+        // If we have an initialMessage, keep waiting (session is being spawned)
+        // Otherwise, check if the last message is from the user with an active session
+        if (!initialMessage && historyMessages.length > 0) {
           const lastMsg = historyMessages[historyMessages.length - 1]
           if (lastMsg.type === 'user') {
-            // Check if there's an active session for this brainstorm
             try {
               const brainstorm = await api.getBrainstorm(projectId, brainstormId)
-              if (brainstorm.hasActiveSession) {
-                setIsWaitingForResponse(true)
-              } else {
-                setIsWaitingForResponse(false)
-              }
+              setIsWaitingForResponse(!!brainstorm.hasActiveSession)
             } catch {
               setIsWaitingForResponse(false)
             }
           } else {
-            // Last message is from AI — not waiting
             setIsWaitingForResponse(false)
           }
         }
