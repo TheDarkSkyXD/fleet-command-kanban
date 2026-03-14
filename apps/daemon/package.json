@@ -1,6 +1,6 @@
 {
   "name": "@fleet-command/daemon",
-  "version": "4.5.7",
+  "version": "5.0.0",
   "description": "Multi-agent software engineering daemon",
   "type": "module",
   "main": "dist/index.js",

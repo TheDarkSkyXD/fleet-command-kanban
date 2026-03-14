@@ -1,7 +1,7 @@
 {
   "name": "@fleet-command/frontend",
   "private": true,
-  "version": "4.5.7",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
