@@ -14,6 +14,124 @@ import { findClaudeBinary, getClaudeSpawnEnv } from "../../utils/claude-path.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Strip ANSI escape codes and control characters from PTY output.
+ * PTY data includes terminal escape sequences (colors, cursor movement,
+ * window title changes) that break JSON.parse.
+ */
+function stripAnsi(str: string): string {
+  return str
+    // Remove OSC sequences (window title, etc): ESC ] ... BEL/ST
+    .replace(/\x1b\][^\x07]*\x07/g, '')
+    // Remove CSI sequences: ESC [ ... final_byte
+    .replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '')
+    // Remove other ESC sequences
+    .replace(/\x1b[^[\]].?/g, '')
+    // Remove control chars except newline
+    .replace(/[\x00-\x09\x0b-\x1f\x7f]/g, '');
+}
+
+/**
+ * Creates a PTY JSON extractor that reassembles JSON objects split across
+ * multiple onData callbacks by the PTY's column wrapping.
+ *
+ * PTY output wraps long JSON lines at the column width (120 chars) using
+ * control characters (\b\r). After stripping ANSI/control codes, we
+ * accumulate text and try JSON.parse whenever we encounter a potential
+ * closing brace at depth 0.
+ */
+function createPtyLineBuffer() {
+  let buffer = '';
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let jsonStartIdx = -1;
+
+  return function processData(data: string): Array<{ parsed: true; event: Record<string, unknown> } | { parsed: false; raw: string }> {
+    const results: Array<{ parsed: true; event: Record<string, unknown> } | { parsed: false; raw: string }> = [];
+    const cleaned = stripAnsi(data);
+    buffer += cleaned;
+
+    // Scan through new characters to find complete JSON objects
+    let scanFrom = buffer.length - cleaned.length;
+    if (scanFrom < 0) scanFrom = 0;
+
+    for (let i = scanFrom; i < buffer.length; i++) {
+      const ch = buffer[i];
+
+      // Start tracking when we see an opening brace outside a string
+      if (jsonStartIdx === -1) {
+        if (ch === '{') {
+          jsonStartIdx = i;
+          depth = 1;
+          inString = false;
+          escape = false;
+        }
+        continue;
+      }
+
+      // Inside a JSON object — track depth
+      if (escape) {
+        escape = false;
+        continue;
+      }
+
+      if (ch === '\\' && inString) {
+        escape = true;
+        continue;
+      }
+
+      if (ch === '"' && !escape) {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) continue;
+
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          // Found complete JSON object
+          const jsonStr = buffer.substring(jsonStartIdx, i + 1);
+          try {
+            const event = JSON.parse(jsonStr);
+            results.push({ parsed: true, event });
+          } catch {
+            // Malformed — skip
+          }
+          jsonStartIdx = -1;
+          inString = false;
+          escape = false;
+        }
+      }
+    }
+
+    // Trim consumed content from buffer
+    if (results.length > 0) {
+      if (jsonStartIdx === -1) {
+        // All JSON objects consumed — clear buffer
+        buffer = '';
+      } else {
+        // Keep unconsumed partial JSON
+        buffer = buffer.substring(jsonStartIdx);
+        jsonStartIdx = 0;
+      }
+    }
+
+    // Prevent unbounded buffer growth (safety limit: 512KB)
+    if (buffer.length > 512 * 1024) {
+      buffer = '';
+      jsonStartIdx = -1;
+      depth = 0;
+      inString = false;
+      escape = false;
+    }
+
+    return results;
+  };
+}
+
 import {
   getTicket,
   listTicketImages,
@@ -441,13 +559,13 @@ export class SessionService {
     // resumed sessions a new transient ID, but --resume only works with the
     // original session ID. The stored session already has the correct one.
     let claudeSessionIdCaptured = !!claudeResumeSessionId;
+    const processLine = createPtyLineBuffer();
 
     proc.onData((data: string) => {
-      const lines = data.split("\n").filter(Boolean);
-      for (const line of lines) {
-        try {
-          const event = JSON.parse(line);
-          const logEntry = { ...event, timestamp: new Date().toISOString() };
+      const results = processLine(data);
+      for (const result of results) {
+        if (result.parsed) {
+          const logEntry = { ...result.event, timestamp: new Date().toISOString() };
           logStream.write(JSON.stringify(logEntry) + "\n");
           this.eventEmitter.emit("session:output", {
             sessionId,
@@ -458,16 +576,16 @@ export class SessionService {
           // Capture Claude's session ID from the first system event that has one
           if (
             !claudeSessionIdCaptured &&
-            event.type === "system" &&
-            event.session_id
+            result.event.type === "system" &&
+            (result.event as Record<string, unknown>).session_id
           ) {
             claudeSessionIdCaptured = true;
-            updateClaudeSessionId(sessionId, event.session_id);
+            updateClaudeSessionId(sessionId, (result.event as Record<string, unknown>).session_id as string);
           }
-        } catch {
+        } else {
           const logEntry = {
             type: "raw",
-            content: line,
+            content: result.raw,
             timestamp: new Date().toISOString(),
           };
           logStream.write(JSON.stringify(logEntry) + "\n");
@@ -775,13 +893,13 @@ export class SessionService {
     this.eventEmitter.emit("session:started", { sessionId, ...meta });
 
     let claudeSessionIdCaptured = !!existingClaudeSessionId;
+    const processLine = createPtyLineBuffer();
 
     proc.onData((data: string) => {
-      const lines = data.split("\n").filter(Boolean);
-      for (const line of lines) {
-        try {
-          const event = JSON.parse(line);
-          const logEntry = { ...event, timestamp: new Date().toISOString() };
+      const results = processLine(data);
+      for (const result of results) {
+        if (result.parsed) {
+          const logEntry = { ...result.event, timestamp: new Date().toISOString() };
           logStream.write(JSON.stringify(logEntry) + "\n");
           this.eventEmitter.emit("session:output", {
             sessionId,
@@ -789,23 +907,21 @@ export class SessionService {
             event: logEntry,
           });
 
-          // Capture Claude's session ID from the first system event (first session only)
           if (
             !claudeSessionIdCaptured &&
-            event.type === "system" &&
-            event.session_id
+            result.event.type === "system" &&
+            (result.event as Record<string, unknown>).session_id
           ) {
             claudeSessionIdCaptured = true;
             console.log(
-              `[spawnForBrainstorm] Captured Claude session ID: ${event.session_id}`,
+              `[spawnForBrainstorm] Captured Claude session ID: ${(result.event as Record<string, unknown>).session_id}`,
             );
-            // Store in session record
-            updateClaudeSessionId(sessionId, event.session_id);
+            updateClaudeSessionId(sessionId, (result.event as Record<string, unknown>).session_id as string);
           }
-        } catch {
+        } else {
           const logEntry = {
             type: "raw",
-            content: line,
+            content: result.raw,
             timestamp: new Date().toISOString(),
           };
           logStream.write(JSON.stringify(logEntry) + "\n");
@@ -1021,13 +1137,13 @@ export class SessionService {
     this.eventEmitter.emit("session:started", { sessionId, ...meta });
 
     let claudeSessionIdCaptured = !!existingClaudeSessionId;
+    const processLine = createPtyLineBuffer();
 
     proc.onData((data: string) => {
-      const lines = data.split("\n").filter(Boolean);
-      for (const line of lines) {
-        try {
-          const event = JSON.parse(line);
-          const logEntry = { ...event, timestamp: new Date().toISOString() };
+      const results = processLine(data);
+      for (const result of results) {
+        if (result.parsed) {
+          const logEntry = { ...result.event, timestamp: new Date().toISOString() };
           logStream.write(JSON.stringify(logEntry) + "\n");
           this.eventEmitter.emit("session:output", {
             sessionId,
@@ -1037,17 +1153,17 @@ export class SessionService {
 
           if (
             !claudeSessionIdCaptured &&
-            event.type === "system" &&
-            event.session_id
+            result.event.type === "system" &&
+            (result.event as Record<string, unknown>).session_id
           ) {
             claudeSessionIdCaptured = true;
-            console.log(`[assistant] Captured Claude session ID: ${event.session_id}`);
-            updateClaudeSessionId(sessionId, event.session_id);
+            console.log(`[assistant] Captured Claude session ID: ${(result.event as Record<string, unknown>).session_id}`);
+            updateClaudeSessionId(sessionId, (result.event as Record<string, unknown>).session_id as string);
           }
-        } catch {
+        } else {
           const logEntry = {
             type: "raw",
-            content: line,
+            content: result.raw,
             timestamp: new Date().toISOString(),
           };
           logStream.write(JSON.stringify(logEntry) + "\n");
