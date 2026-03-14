@@ -156,6 +156,12 @@ export function AssistantChat({
         }))
 
         setMessages(historyMessages)
+
+        // Only show thinking if the last message is from the user (waiting for AI)
+        if (historyMessages.length > 0) {
+          const lastMsg = historyMessages[historyMessages.length - 1]
+          setIsWaitingForResponse(lastMsg.type === 'user')
+        }
       } catch (error) {
         console.error('Failed to load assistant message history:', error)
       } finally {
