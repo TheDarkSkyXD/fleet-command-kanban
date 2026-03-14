@@ -283,14 +283,14 @@ export function AssistantChat({
 
       {/* Option buttons */}
       {pendingOptions.length > 0 && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
+        <div className="px-4 pb-2 grid grid-cols-2 gap-2">
           {pendingOptions.map((option, index) => (
             <Button
               key={index}
               variant="outline"
               size="sm"
               onClick={() => handleOptionClick(option)}
-              className="text-xs whitespace-normal h-auto min-h-8 text-left shrink"
+              className="text-xs whitespace-normal h-auto min-h-8 text-left"
             >
               {option}
             </Button>
