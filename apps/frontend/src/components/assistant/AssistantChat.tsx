@@ -210,7 +210,7 @@ export function AssistantChat({
     if (!messages.length) return []
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.type === 'question' && Array.isArray(lastMessage.options)) {
-      return lastMessage.options
+      return lastMessage.options.slice(0, 4)
     }
     return []
   }, [messages])

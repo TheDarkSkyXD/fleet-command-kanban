@@ -37,6 +37,7 @@ const welcomeOptions = [
   'Explore the codebase',
   'Manage tickets & tasks',
   'Ask a question',
+  'What can you do?',
 ];
 
 // Prevents duplicate session spawns from concurrent requests (React strict mode, rapid clicks)
