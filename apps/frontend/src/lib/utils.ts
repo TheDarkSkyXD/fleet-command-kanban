@@ -53,7 +53,7 @@ export function formatToolActivity(toolName: string, input?: Record<string, unkn
 
   // MCP tools
   const mcpPhrases: Record<string, string> = {
-    'chat_ask': 'Preparing question',
+    'chat_ask': 'Preparing response',
     'chat_notify': 'Sending update',
     'get_artifact': 'Reading document',
     'attach_artifact': 'Saving document',
@@ -168,13 +168,20 @@ export function formatToolActivity(toolName: string, input?: Record<string, unkn
     return 'Running command'
   }
 
-  // Handle Task tool
+  // Handle Task/Agent tools
   if (toolName === 'Task') {
     return 'Delegating task'
+  }
+  if (toolName === 'Agent') {
+    const desc = input?.description as string
+    if (desc) return desc.length > 40 ? desc.substring(0, 37) + '...' : desc
+    return 'Running sub-agent'
   }
 
   // Handle web tools
   if (toolName === 'WebSearch') {
+    const query = input?.query as string
+    if (query) return `Searching: ${query.length > 30 ? query.substring(0, 27) + '...' : query}`
     return 'Searching the web'
   }
   if (toolName === 'WebFetch') {
@@ -184,6 +191,16 @@ export function formatToolActivity(toolName: string, input?: Record<string, unkn
   // Handle TodoWrite
   if (toolName === 'TodoWrite') {
     return 'Updating task list'
+  }
+
+  // Handle LSP
+  if (toolName === 'LSP') {
+    return 'Analyzing code structure'
+  }
+
+  // Handle NotebookEdit
+  if (toolName === 'NotebookEdit') {
+    return 'Editing notebook'
   }
 
   // Default fallback

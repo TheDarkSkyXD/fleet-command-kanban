@@ -59,16 +59,15 @@ export function BrainstormChat({
     const event = data.event
     if (!event) return
 
-    // Handle assistant message with tool use or text
+    // Handle assistant message with tool use — show descriptive activity
     if (event.type === 'assistant' && event.message?.content) {
       for (const block of event.message.content) {
         if (block.type === 'tool_use' && block.name) {
           const activity = formatToolActivity(block.name, block.input as Record<string, unknown>)
           setCurrentActivity(activity)
-        } else if (block.type === 'text' && block.text) {
-          // When we get text output, clear activity (response is coming)
-          setCurrentActivity(null)
         }
+        // Don't clear activity on intermediate text blocks — keep showing
+        // the last tool activity until the final response arrives via SSE
       }
     }
   }, [brainstormId]))
